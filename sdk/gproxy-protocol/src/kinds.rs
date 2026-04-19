@@ -27,6 +27,18 @@ pub enum OperationFamily {
     StreamCreateImageEdit,
     #[serde(rename = "openai_response_websocket")]
     OpenAiResponseWebSocket,
+    #[serde(rename = "openai_realtime_websocket")]
+    OpenAiRealtimeWebSocket,
+    #[serde(rename = "realtime_client_secret_create")]
+    RealtimeClientSecretCreate,
+    #[serde(rename = "realtime_call_accept")]
+    RealtimeCallAccept,
+    #[serde(rename = "realtime_call_hangup")]
+    RealtimeCallHangup,
+    #[serde(rename = "realtime_call_refer")]
+    RealtimeCallRefer,
+    #[serde(rename = "realtime_call_reject")]
+    RealtimeCallReject,
     #[serde(rename = "gemini_live")]
     GeminiLive,
     #[serde(rename = "embeddings")]
@@ -73,6 +85,12 @@ impl fmt::Display for OperationFamily {
             Self::CreateImageEdit => "create_image_edit",
             Self::StreamCreateImageEdit => "stream_create_image_edit",
             Self::OpenAiResponseWebSocket => "openai_response_websocket",
+            Self::OpenAiRealtimeWebSocket => "openai_realtime_websocket",
+            Self::RealtimeClientSecretCreate => "realtime_client_secret_create",
+            Self::RealtimeCallAccept => "realtime_call_accept",
+            Self::RealtimeCallHangup => "realtime_call_hangup",
+            Self::RealtimeCallRefer => "realtime_call_refer",
+            Self::RealtimeCallReject => "realtime_call_reject",
             Self::GeminiLive => "gemini_live",
             Self::Embedding => "embeddings",
             Self::FileUpload => "file_upload",
@@ -101,6 +119,12 @@ impl TryFrom<&str> for OperationFamily {
             "create_image_edit" => Ok(Self::CreateImageEdit),
             "stream_create_image_edit" => Ok(Self::StreamCreateImageEdit),
             "openai_response_websocket" => Ok(Self::OpenAiResponseWebSocket),
+            "openai_realtime_websocket" => Ok(Self::OpenAiRealtimeWebSocket),
+            "realtime_client_secret_create" => Ok(Self::RealtimeClientSecretCreate),
+            "realtime_call_accept" => Ok(Self::RealtimeCallAccept),
+            "realtime_call_hangup" => Ok(Self::RealtimeCallHangup),
+            "realtime_call_refer" => Ok(Self::RealtimeCallRefer),
+            "realtime_call_reject" => Ok(Self::RealtimeCallReject),
             "gemini_live" => Ok(Self::GeminiLive),
             "embeddings" => Ok(Self::Embedding),
             "file_upload" => Ok(Self::FileUpload),

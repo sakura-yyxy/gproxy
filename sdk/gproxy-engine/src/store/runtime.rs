@@ -413,6 +413,7 @@ impl<C: Channel> ProviderRuntime for ProviderInstance<C> {
             model: model.map(String::from),
             body: Vec::new(),
             headers: http::HeaderMap::new(),
+            path_params: std::collections::BTreeMap::new(),
         };
 
         let health = self.health.lock().unwrap();

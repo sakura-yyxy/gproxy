@@ -61,6 +61,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         model: Some("gpt-4o-mini".to_string()),
         body,
         headers: HeaderMap::new(),
+        path_params: std::collections::BTreeMap::new(),
     };
 
     let outcome = execute_once(&channel, &credential, &settings, &http_client, request).await?;

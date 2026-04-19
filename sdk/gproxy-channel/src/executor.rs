@@ -29,6 +29,7 @@
 //!     model: Some("gpt-4o-mini".to_string()),
 //!     body: br#"{"model":"gpt-4o-mini","messages":[{"role":"user","content":"hi"}]}"#.to_vec(),
 //!     headers: http::HeaderMap::new(),
+//!     path_params: std::collections::BTreeMap::new(),
 //! };
 //!
 //! let outcome = execute_once(&channel, &credential, &settings, &http_client, request).await?;

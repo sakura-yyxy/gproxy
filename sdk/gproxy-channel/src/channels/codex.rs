@@ -636,6 +636,15 @@ impl Channel for CodexChannel {
             ),
             // Compact
             pass(OperationFamily::Compact, ProtocolKind::OpenAi),
+            // Realtime
+            pass(
+                OperationFamily::OpenAiRealtimeWebSocket,
+                ProtocolKind::OpenAi,
+            ),
+            pass(OperationFamily::RealtimeCallAccept, ProtocolKind::OpenAi),
+            pass(OperationFamily::RealtimeCallHangup, ProtocolKind::OpenAi),
+            pass(OperationFamily::RealtimeCallRefer, ProtocolKind::OpenAi),
+            pass(OperationFamily::RealtimeCallReject, ProtocolKind::OpenAi),
         ];
 
         for (key, imp) in routes {
@@ -1061,6 +1070,35 @@ fn codex_request_path(request: &PreparedRequest) -> Result<String, UpstreamError
         }
         OperationFamily::Compact => Ok("/responses/compact".to_string()),
         OperationFamily::OpenAiResponseWebSocket => Ok("/responses".to_string()),
+        OperationFamily::OpenAiRealtimeWebSocket => Ok("/realtime".to_string()),
+        OperationFamily::RealtimeCallAccept => {
+            let call_id = request.path_params.get("call_id").cloned().unwrap_or_default();
+            if call_id.is_empty() {
+                return Err(UpstreamError::Channel("missing call_id path param".to_string()));
+            }
+            Ok(format!("/realtime/calls/{call_id}/accept"))
+        }
+        OperationFamily::RealtimeCallHangup => {
+            let call_id = request.path_params.get("call_id").cloned().unwrap_or_default();
+            if call_id.is_empty() {
+                return Err(UpstreamError::Channel("missing call_id path param".to_string()));
+            }
+            Ok(format!("/realtime/calls/{call_id}/hangup"))
+        }
+        OperationFamily::RealtimeCallRefer => {
+            let call_id = request.path_params.get("call_id").cloned().unwrap_or_default();
+            if call_id.is_empty() {
+                return Err(UpstreamError::Channel("missing call_id path param".to_string()));
+            }
+            Ok(format!("/realtime/calls/{call_id}/refer"))
+        }
+        OperationFamily::RealtimeCallReject => {
+            let call_id = request.path_params.get("call_id").cloned().unwrap_or_default();
+            if call_id.is_empty() {
+                return Err(UpstreamError::Channel("missing call_id path param".to_string()));
+            }
+            Ok(format!("/realtime/calls/{call_id}/reject"))
+        }
         _ => Err(UpstreamError::Channel(format!(
             "unsupported codex request route: ({}, {})",
             request.route.operation, request.route.protocol
@@ -1092,6 +1130,7 @@ mod tests {
             }))
             .expect("serialize request"),
             headers: http::HeaderMap::new(),
+            path_params: BTreeMap::new(),
         };
 
         let finalized = channel

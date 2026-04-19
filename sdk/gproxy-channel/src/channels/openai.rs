@@ -190,6 +190,19 @@ impl Channel for OpenAiChannel {
             ),
             // === Compact (OpenAI Responses only) ===
             pass(OperationFamily::Compact, ProtocolKind::OpenAi),
+            // === Realtime ===
+            pass(
+                OperationFamily::OpenAiRealtimeWebSocket,
+                ProtocolKind::OpenAi,
+            ),
+            pass(
+                OperationFamily::RealtimeClientSecretCreate,
+                ProtocolKind::OpenAi,
+            ),
+            pass(OperationFamily::RealtimeCallAccept, ProtocolKind::OpenAi),
+            pass(OperationFamily::RealtimeCallHangup, ProtocolKind::OpenAi),
+            pass(OperationFamily::RealtimeCallRefer, ProtocolKind::OpenAi),
+            pass(OperationFamily::RealtimeCallReject, ProtocolKind::OpenAi),
         ];
 
         for (key, implementation) in routes {
@@ -299,6 +312,38 @@ fn openai_request_path(request: &PreparedRequest) -> Result<String, UpstreamErro
         }
         OperationFamily::Embedding => Ok("/v1/embeddings".to_string()),
         OperationFamily::OpenAiResponseWebSocket => Ok("/v1/responses".to_string()),
+        OperationFamily::OpenAiRealtimeWebSocket => Ok("/v1/realtime".to_string()),
+        OperationFamily::RealtimeClientSecretCreate => {
+            Ok("/v1/realtime/client_secrets".to_string())
+        }
+        OperationFamily::RealtimeCallAccept => {
+            let call_id = request.path_params.get("call_id").cloned().unwrap_or_default();
+            if call_id.is_empty() {
+                return Err(UpstreamError::Channel("missing call_id path param".to_string()));
+            }
+            Ok(format!("/v1/realtime/calls/{call_id}/accept"))
+        }
+        OperationFamily::RealtimeCallHangup => {
+            let call_id = request.path_params.get("call_id").cloned().unwrap_or_default();
+            if call_id.is_empty() {
+                return Err(UpstreamError::Channel("missing call_id path param".to_string()));
+            }
+            Ok(format!("/v1/realtime/calls/{call_id}/hangup"))
+        }
+        OperationFamily::RealtimeCallRefer => {
+            let call_id = request.path_params.get("call_id").cloned().unwrap_or_default();
+            if call_id.is_empty() {
+                return Err(UpstreamError::Channel("missing call_id path param".to_string()));
+            }
+            Ok(format!("/v1/realtime/calls/{call_id}/refer"))
+        }
+        OperationFamily::RealtimeCallReject => {
+            let call_id = request.path_params.get("call_id").cloned().unwrap_or_default();
+            if call_id.is_empty() {
+                return Err(UpstreamError::Channel("missing call_id path param".to_string()));
+            }
+            Ok(format!("/v1/realtime/calls/{call_id}/reject"))
+        }
         _ => Err(UpstreamError::Channel(format!(
             "unsupported openai request route: ({}, {})",
             request.route.operation, request.route.protocol

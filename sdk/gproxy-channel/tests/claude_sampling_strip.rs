@@ -23,6 +23,7 @@ fn generate_content_request(body: &str, model: &str) -> PreparedRequest {
         model: Some(model.to_string()),
         body: body.as_bytes().to_vec(),
         headers: HeaderMap::new(),
+        path_params: std::collections::BTreeMap::new(),
     }
 }
 

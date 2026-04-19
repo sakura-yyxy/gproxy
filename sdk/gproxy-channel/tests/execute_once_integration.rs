@@ -113,6 +113,7 @@ async fn execute_once_hits_mock_upstream_and_parses_success() {
         }))
         .unwrap(),
         headers: http::HeaderMap::new(),
+        path_params: std::collections::BTreeMap::new(),
     };
 
     let outcome = execute_once(&channel, &credential, &settings, &http_client, request)

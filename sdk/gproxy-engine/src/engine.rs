@@ -1202,6 +1202,7 @@ impl GproxyEngine {
             model: request.model.clone(),
             body,
             headers: request.headers,
+            path_params: std::collections::BTreeMap::new(),
         };
 
         let mut prepared = provider.finalize_request(prepared)?;
@@ -1477,6 +1478,7 @@ impl GproxyEngine {
             model: request.model.clone(),
             body,
             headers: request.headers,
+            path_params: std::collections::BTreeMap::new(),
         };
 
         let mut prepared = provider.finalize_request(prepared)?;
