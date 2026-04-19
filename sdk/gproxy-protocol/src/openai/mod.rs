@@ -7,6 +7,7 @@
 //! - [`embeddings`] — `POST /v1/embeddings`
 //! - [`create_image`] / [`create_image_edit`] — image generation and editing
 //! - [`model_list`] / [`model_get`] — `GET /v1/models` catalog
+//! - [`realtime`] — `GET /v1/realtime` WebSocket (client and server events)
 //! - [`types`] — shared types: error types, model enums, common structures
 
 pub mod types;
@@ -20,3 +21,4 @@ pub mod create_response;
 pub mod embeddings;
 pub mod model_get;
 pub mod model_list;
+pub mod realtime;
