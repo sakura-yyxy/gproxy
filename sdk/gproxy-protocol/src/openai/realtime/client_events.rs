@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::types::{JsonObject, RealtimeConversationItem, RealtimeSession};
+use super::types::{RealtimeConversationItem, RealtimeResponseCreateParams, RealtimeSession};
 
 /// `session.update` — update the Realtime session configuration.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -75,16 +75,14 @@ pub struct OpenAiRealtimeConversationItemDelete {
 
 /// `response.create` — request model inference / response generation.
 ///
-/// The `response` field mirrors `RealtimeResponseCreateParams` which is a
-/// large, overlapping subset of the session configuration. We retain it as a
-/// [`JsonObject`] so the wire representation is preserved verbatim without
-/// re-modeling the entire session schema.
+/// The `response` field is a session-override: any subset of
+/// [`RealtimeResponseCreateParams`] applies for this response only.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct OpenAiRealtimeResponseCreate {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub event_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub response: Option<JsonObject>,
+    pub response: Option<RealtimeResponseCreateParams>,
 }
 
 /// `response.cancel` — cancel an in-progress response.

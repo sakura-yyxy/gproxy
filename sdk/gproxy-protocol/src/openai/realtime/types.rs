@@ -4,6 +4,8 @@
 //! events (session configuration, conversation items, content parts, audio
 //! formats, turn detection, tools, usage, rate limits, and the error shape).
 
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 
 pub use crate::openai::create_response::types::{HttpMethod, JsonObject, Metadata};
@@ -138,32 +140,53 @@ pub enum RealtimeItemStatus {
     InProgress,
 }
 
-/// A content part within a realtime `message` item.
-///
-/// Unions the union of fields across system/user/assistant content parts as
-/// documented — individual content part `type`s only populate a subset of
-/// fields (e.g. `input_text` uses `text`, `input_audio` uses `audio`/`transcript`).
+/// Image detail level for `input_image` content parts.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RealtimeImageDetail {
+    Auto,
+    Low,
+    High,
+}
+
+/// A content part within a realtime `message` item, keyed by `type`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct RealtimeMessageContentPart {
-    /// Content part kind: `input_text`, `input_audio`, `input_image`,
-    /// `output_text`, or `output_audio`.
-    #[serde(rename = "type", default, skip_serializing_if = "Option::is_none")]
-    pub type_: Option<String>,
-    /// Text for `input_text` / `output_text` parts.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub text: Option<String>,
-    /// Base64-encoded audio bytes (input or output audio parts).
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub audio: Option<String>,
-    /// Transcript accompanying an audio part.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub transcript: Option<String>,
-    /// Image detail for `input_image` parts: `auto` / `low` / `high`.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub detail: Option<String>,
-    /// Data URL containing base64-encoded image bytes for `input_image` parts.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub image_url: Option<String>,
+#[serde(tag = "type")]
+pub enum RealtimeMessageContentPart {
+    /// `input_text` — plain text input from system/user messages.
+    #[serde(rename = "input_text")]
+    InputText {
+        text: String,
+    },
+    /// `input_audio` — base64 audio bytes with optional transcript (user messages).
+    #[serde(rename = "input_audio")]
+    InputAudio {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        audio: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        transcript: Option<String>,
+    },
+    /// `input_image` — base64 image bytes as a data URI (user messages).
+    #[serde(rename = "input_image")]
+    InputImage {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        image_url: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        detail: Option<RealtimeImageDetail>,
+    },
+    /// `output_text` — plain text output (assistant messages).
+    #[serde(rename = "output_text")]
+    OutputText {
+        text: String,
+    },
+    /// `output_audio` — base64 audio bytes with transcript (assistant messages).
+    #[serde(rename = "output_audio")]
+    OutputAudio {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        audio: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        transcript: Option<String>,
+    },
 }
 
 /// Content part inside a streaming `response.content_part.*` event
@@ -232,6 +255,16 @@ pub enum RealtimeConversationItem {
     /// `type: "mcp_approval_request"`.
     #[serde(rename = "mcp_approval_request")]
     McpApprovalRequest(RealtimeMcpApprovalRequestItem),
+    /// `type: "item_reference"` — reference to an existing item by id
+    /// (used in `response.create.input`).
+    #[serde(rename = "item_reference")]
+    ItemReference(RealtimeItemReference),
+}
+
+/// An `item_reference` — references an existing conversation item by id.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RealtimeItemReference {
+    pub id: String,
 }
 
 /// A `message` conversation item (system/user/assistant).
@@ -345,34 +378,394 @@ pub struct RealtimeSession {
     /// System instructions string.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub instructions: Option<String>,
-    /// Tools configuration (free-form: function / MCP / etc.).
+    /// Tools configuration (function / MCP tools).
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub tools: Option<serde_json::Value>,
-    /// Tool-choice configuration (string or object).
+    pub tools: Option<Vec<RealtimeTool>>,
+    /// Tool-choice configuration (string mode or forced function/MCP tool).
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub tool_choice: Option<serde_json::Value>,
+    pub tool_choice: Option<RealtimeToolChoice>,
     /// Maximum output tokens per response (`number` or `"inf"`).
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub max_output_tokens: Option<serde_json::Value>,
+    pub max_output_tokens: Option<RealtimeMaxOutputTokens>,
     /// Tracing configuration (`auto` or object).
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub tracing: Option<serde_json::Value>,
+    pub tracing: Option<RealtimeTracing>,
     /// Prompt template reference.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub prompt: Option<serde_json::Value>,
+    pub prompt: Option<RealtimePromptRef>,
     /// Unix timestamp for session expiry.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub expires_at: Option<i64>,
     /// Audio input / output configuration.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub audio: Option<serde_json::Value>,
+    pub audio: Option<RealtimeAudioConfig>,
     /// Include-list of additional fields in server outputs.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub include: Option<Vec<String>>,
-    /// Truncation policy (`auto` / `disabled` / object).
+    /// Truncation policy (`auto` / `disabled` / retention-ratio object).
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub truncation: Option<serde_json::Value>,
+    pub truncation: Option<RealtimeTruncation>,
     /// Any other session fields the server includes.
+    #[serde(flatten, default, skip_serializing_if = "JsonObject::is_empty")]
+    pub extra: JsonObject,
+}
+
+/// Top-level `audio` block on a session (`{ input, output }`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+pub struct RealtimeAudioConfig {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub input: Option<RealtimeAudioConfigInput>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub output: Option<RealtimeAudioConfigOutput>,
+    #[serde(flatten, default, skip_serializing_if = "JsonObject::is_empty")]
+    pub extra: JsonObject,
+}
+
+/// Session input-audio configuration.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+pub struct RealtimeAudioConfigInput {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub format: Option<RealtimeAudioFormat>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub noise_reduction: Option<RealtimeNoiseReduction>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub transcription: Option<RealtimeInputAudioTranscription>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub turn_detection: Option<RealtimeTurnDetection>,
+    #[serde(flatten, default, skip_serializing_if = "JsonObject::is_empty")]
+    pub extra: JsonObject,
+}
+
+/// Session output-audio configuration.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+pub struct RealtimeAudioConfigOutput {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub format: Option<RealtimeAudioFormat>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub speed: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub voice: Option<RealtimeVoice>,
+    #[serde(flatten, default, skip_serializing_if = "JsonObject::is_empty")]
+    pub extra: JsonObject,
+}
+
+/// Input-audio ASR transcription configuration.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+pub struct RealtimeInputAudioTranscription {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub language: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub prompt: Option<String>,
+    #[serde(flatten, default, skip_serializing_if = "JsonObject::is_empty")]
+    pub extra: JsonObject,
+}
+
+/// Tools configuration entry — a function tool or an MCP tool.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum RealtimeTool {
+    /// Function tool (`type: "function"`).
+    #[serde(rename = "function")]
+    Function(RealtimeFunctionTool),
+    /// Remote MCP tool (`type: "mcp"`).
+    #[serde(rename = "mcp")]
+    Mcp(RealtimeMcpTool),
+}
+
+/// Function tool definition used on the Realtime session `tools` array.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+pub struct RealtimeFunctionTool {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parameters: Option<serde_json::Value>,
+    #[serde(flatten, default, skip_serializing_if = "JsonObject::is_empty")]
+    pub extra: JsonObject,
+}
+
+/// MCP tool definition for a session (remote MCP server).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealtimeMcpTool {
+    pub server_label: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub allowed_tools: Option<RealtimeMcpAllowedTools>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub authorization: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub connector_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub defer_loading: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub headers: Option<BTreeMap<String, String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub require_approval: Option<RealtimeMcpApprovalConfig>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub server_description: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub server_url: Option<String>,
+    #[serde(flatten, default, skip_serializing_if = "JsonObject::is_empty")]
+    pub extra: JsonObject,
+}
+
+/// `allowed_tools` for an MCP tool — either a list of tool names or a filter object.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum RealtimeMcpAllowedTools {
+    /// Plain list of tool names.
+    Names(Vec<String>),
+    /// Filter object (read-only flag plus name list).
+    Filter(RealtimeMcpToolFilter),
+}
+
+/// Filter object for MCP `allowed_tools` / approval entries.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct RealtimeMcpToolFilter {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub read_only: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tool_names: Option<Vec<String>>,
+}
+
+/// `require_approval` on an MCP tool — either a setting literal or a filter object.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum RealtimeMcpApprovalConfig {
+    /// Filter object `{ always?, never? }`.
+    Filter(RealtimeMcpApprovalFilter),
+    /// Single approval setting (`"always"` or `"never"`).
+    Setting(RealtimeMcpApprovalSetting),
+}
+
+/// MCP approval filter with optional `always` / `never` inclusion lists.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct RealtimeMcpApprovalFilter {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub always: Option<RealtimeMcpToolFilter>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub never: Option<RealtimeMcpToolFilter>,
+}
+
+/// MCP approval setting literal.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RealtimeMcpApprovalSetting {
+    Always,
+    Never,
+}
+
+/// Tool-choice configuration.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum RealtimeToolChoice {
+    /// Named mode string (`none` / `auto` / `required`).
+    Mode(RealtimeToolChoiceMode),
+    /// Force a specific function call (`{type:"function", name}`).
+    Function(RealtimeToolChoiceFunction),
+    /// Force a specific MCP tool call (`{type:"mcp", server_label, name?}`).
+    Mcp(RealtimeToolChoiceMcp),
+}
+
+/// Tool-choice named-mode string.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RealtimeToolChoiceMode {
+    None,
+    Auto,
+    Required,
+}
+
+/// Force-call-a-function tool choice variant.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RealtimeToolChoiceFunction {
+    #[serde(rename = "type")]
+    pub type_: RealtimeToolChoiceFunctionType,
+    pub name: String,
+}
+
+/// Marker type for `{"type":"function"}`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RealtimeToolChoiceFunctionType {
+    Function,
+}
+
+/// Force-call-an-MCP-tool tool choice variant.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RealtimeToolChoiceMcp {
+    #[serde(rename = "type")]
+    pub type_: RealtimeToolChoiceMcpType,
+    pub server_label: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+}
+
+/// Marker type for `{"type":"mcp"}`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RealtimeToolChoiceMcpType {
+    Mcp,
+}
+
+/// `max_output_tokens` value — an integer count or the literal `"inf"`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum RealtimeMaxOutputTokens {
+    /// Explicit integer cap.
+    Count(u64),
+    /// Literal `"inf"` — unlimited up to model max.
+    Inf(InfLiteral),
+}
+
+/// Serializes as the literal string `"inf"`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum InfLiteral {
+    Inf,
+}
+
+/// Truncation policy for a session — string mode or retention-ratio object.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum RealtimeTruncation {
+    /// `"auto"` or `"disabled"`.
+    Mode(RealtimeTruncationMode),
+    /// `{ type: "retention_ratio", retention_ratio, token_limits? }`.
+    RetentionRatio(RealtimeRetentionRatioTruncation),
+}
+
+/// Named truncation mode.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RealtimeTruncationMode {
+    Auto,
+    Disabled,
+}
+
+/// Retention-ratio truncation config.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealtimeRetentionRatioTruncation {
+    #[serde(rename = "type")]
+    pub type_: RealtimeRetentionRatioType,
+    pub retention_ratio: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub token_limits: Option<RealtimeRetentionRatioTokenLimits>,
+}
+
+/// Marker type for `{"type":"retention_ratio"}`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RealtimeRetentionRatioType {
+    RetentionRatio,
+}
+
+/// Optional custom token limits for retention-ratio truncation.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct RealtimeRetentionRatioTokenLimits {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub post_instructions: Option<u64>,
+}
+
+/// Prompt-template reference (`{ id, version?, variables? }`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RealtimePromptRef {
+    pub id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+    /// Map of variable name to substitution value (string or structured input).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub variables: Option<BTreeMap<String, serde_json::Value>>,
+    #[serde(flatten, default, skip_serializing_if = "JsonObject::is_empty")]
+    pub extra: JsonObject,
+}
+
+/// Tracing configuration — either the literal `"auto"` or a granular object.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum RealtimeTracing {
+    /// `"auto"` — enable tracing with defaults.
+    Auto(RealtimeTracingAuto),
+    /// Granular tracing configuration object.
+    Config(RealtimeTracingConfig),
+}
+
+/// Serializes as the literal string `"auto"`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RealtimeTracingAuto {
+    Auto,
+}
+
+/// Granular tracing configuration object.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+pub struct RealtimeTracingConfig {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub group_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<JsonObject>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub workflow_name: Option<String>,
+    #[serde(flatten, default, skip_serializing_if = "JsonObject::is_empty")]
+    pub extra: JsonObject,
+}
+
+/// Conversation-targeting option on `response.create` (`"auto"` / `"none"`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RealtimeResponseConversation {
+    Auto,
+    None,
+}
+
+/// Per-response audio override inside [`RealtimeResponseCreateParams`].
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+pub struct RealtimeResponseCreateAudio {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub output: Option<RealtimeResponseCreateAudioOutput>,
+    #[serde(flatten, default, skip_serializing_if = "JsonObject::is_empty")]
+    pub extra: JsonObject,
+}
+
+/// Output-only audio override allowed on `response.create`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+pub struct RealtimeResponseCreateAudioOutput {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub format: Option<RealtimeAudioFormat>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub voice: Option<RealtimeVoice>,
+    #[serde(flatten, default, skip_serializing_if = "JsonObject::is_empty")]
+    pub extra: JsonObject,
+}
+
+/// Parameters accepted on the `response.create` event's `response` field.
+///
+/// This is a session-override subset: any provided field overrides the current
+/// session configuration for this response only.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+pub struct RealtimeResponseCreateParams {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub audio: Option<RealtimeResponseCreateAudio>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub conversation: Option<RealtimeResponseConversation>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub input: Option<Vec<RealtimeConversationItem>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub instructions: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_output_tokens: Option<RealtimeMaxOutputTokens>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Metadata>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub output_modalities: Option<Vec<RealtimeOutputModality>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub prompt: Option<RealtimePromptRef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tool_choice: Option<RealtimeToolChoice>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tools: Option<Vec<RealtimeTool>>,
     #[serde(flatten, default, skip_serializing_if = "JsonObject::is_empty")]
     pub extra: JsonObject,
 }
@@ -508,7 +901,7 @@ pub struct RealtimeResponse {
     pub conversation_id: Option<String>,
     /// `number` or the string `"inf"`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub max_output_tokens: Option<serde_json::Value>,
+    pub max_output_tokens: Option<RealtimeMaxOutputTokens>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
