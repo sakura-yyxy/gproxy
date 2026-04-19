@@ -2,6 +2,7 @@ pub mod app_state;
 pub mod config;
 pub mod middleware;
 pub mod principal;
+pub mod realtime_call_id;
 
 pub use app_state::{
     AppState, AppStateBuilder, MemoryClaudeFile, MemoryModel, MemoryUserCredentialFile,

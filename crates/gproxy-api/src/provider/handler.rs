@@ -15,6 +15,7 @@ use gproxy_sdk::engine::engine::{ExecuteBody, ExecuteRequest, UpstreamRequestMet
 use gproxy_server::middleware::classify::{BufferedBodyBytes, Classification};
 use gproxy_server::middleware::model_alias::ResolvedAlias;
 use gproxy_server::middleware::request_model::ExtractedModel;
+use gproxy_server::realtime_call_id;
 use gproxy_server::{AppState, OperationFamily, ProtocolKind};
 
 use crate::auth::AuthenticatedUser;
@@ -27,6 +28,25 @@ use gproxy_storage::repository::FileRepository;
 /// handler is wired to routes with both one path param (`/{provider}/v1/messages`)
 /// and two path params (`/{provider}/v1beta/models/{*target}`). `Path<String>`
 /// would panic at runtime with "Expected 1 but got 2" on the two-param routes.
+/// If `classification.path_params` contains a wrapped `call_id`, verify it
+/// belongs to the authenticated user and replace it with the upstream real
+/// id before it flows to the channel layer. No-op when the map has no
+/// `call_id` entry.
+fn unwrap_call_id_param(
+    classification: &mut Classification,
+    user_id: i64,
+) -> Result<(), HttpError> {
+    let Some(wrapped) = classification.path_params.get("call_id").cloned() else {
+        return Ok(());
+    };
+    let real = realtime_call_id::unwrap(&wrapped, user_id)
+        .map_err(|e| HttpError::forbidden(format!("call_id: {e}")))?;
+    classification
+        .path_params
+        .insert("call_id".to_string(), real);
+    Ok(())
+}
+
 pub async fn proxy(
     State(state): State<Arc<AppState>>,
     Path(path_params): Path<HashMap<String, String>>,
@@ -50,11 +70,12 @@ pub async fn proxy(
     let user_key = authenticated.0;
 
     // Extract classification from middleware extensions
-    let classification = request
+    let mut classification = request
         .extensions()
         .get::<Classification>()
         .cloned()
         .ok_or_else(|| HttpError::bad_request("request not classified"))?;
+    unwrap_call_id_param(&mut classification, user_key.user_id)?;
 
     // Extract model from middleware extensions. OpenAI clients conventionally
     // send `body.model = "{provider}/{model}"`; strip the matching prefix so
@@ -435,11 +456,12 @@ pub async fn proxy_unscoped(
     let headers = request.headers().clone();
     let user_key = authenticated.0;
 
-    let classification = request
+    let mut classification = request
         .extensions()
         .get::<Classification>()
         .cloned()
         .ok_or_else(|| HttpError::bad_request("request not classified"))?;
+    unwrap_call_id_param(&mut classification, user_key.user_id)?;
 
     if classification.operation == OperationFamily::ModelList {
         return Ok(respond_with_local_json(
@@ -728,11 +750,12 @@ pub async fn proxy_unscoped_files(
             HttpError::bad_request("X-Provider header required for unscoped file operations")
         })?;
 
-    let classification = request
+    let mut classification = request
         .extensions()
         .get::<Classification>()
         .cloned()
         .ok_or_else(|| HttpError::bad_request("request not classified"))?;
+    unwrap_call_id_param(&mut classification, user_key.user_id)?;
 
     let req_body = build_execute_body(
         classification.operation,
