@@ -91,10 +91,7 @@ pub fn router(state: Arc<AppState>) -> Router<Arc<AppState>> {
         .route("/v1/embeddings", post(handler::proxy_unscoped))
         .route("/v1/images/generations", post(handler::proxy_unscoped))
         .route("/v1/images/edits", post(handler::proxy_unscoped))
-        .route(
-            "/v1/realtime/client_secrets",
-            post(handler::proxy_unscoped),
-        )
+        .route("/v1/realtime/client_secrets", post(handler::proxy_unscoped))
         .route(
             "/v1/realtime/calls/{call_id}/accept",
             post(handler::proxy_unscoped),
@@ -172,10 +169,7 @@ pub fn router(state: Arc<AppState>) -> Router<Arc<AppState>> {
             "/v1/responses",
             get(websocket::openai_responses_ws_unscoped),
         )
-        .route(
-            "/v1/realtime",
-            get(websocket::openai_realtime_ws_unscoped),
-        )
+        .route("/v1/realtime", get(websocket::openai_realtime_ws_unscoped))
         .layer(from_fn(sanitize_middleware))
         .layer(from_fn_with_state(state.clone(), require_user_middleware));
 

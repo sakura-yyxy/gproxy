@@ -459,7 +459,10 @@ mod tests {
         .expect("realtime call accept should classify");
         assert_eq!(result.operation, OperationFamily::RealtimeCallAccept);
         assert_eq!(result.protocol, ProtocolKind::OpenAi);
-        assert_eq!(result.path_params.get("call_id").map(String::as_str), Some("rtc_123"));
+        assert_eq!(
+            result.path_params.get("call_id").map(String::as_str),
+            Some("rtc_123")
+        );
     }
 
     #[test]
@@ -472,7 +475,10 @@ mod tests {
         )
         .expect("realtime call hangup should classify");
         assert_eq!(result.operation, OperationFamily::RealtimeCallHangup);
-        assert_eq!(result.path_params.get("call_id").map(String::as_str), Some("rtc_abc"));
+        assert_eq!(
+            result.path_params.get("call_id").map(String::as_str),
+            Some("rtc_abc")
+        );
     }
 
     #[test]
@@ -485,7 +491,10 @@ mod tests {
         )
         .expect("realtime call refer should classify");
         assert_eq!(result.operation, OperationFamily::RealtimeCallRefer);
-        assert_eq!(result.path_params.get("call_id").map(String::as_str), Some("rtc_x"));
+        assert_eq!(
+            result.path_params.get("call_id").map(String::as_str),
+            Some("rtc_x")
+        );
     }
 
     #[test]
@@ -498,18 +507,16 @@ mod tests {
         )
         .expect("realtime call reject should classify");
         assert_eq!(result.operation, OperationFamily::RealtimeCallReject);
-        assert_eq!(result.path_params.get("call_id").map(String::as_str), Some("rtc_y"));
+        assert_eq!(
+            result.path_params.get("call_id").map(String::as_str),
+            Some("rtc_y")
+        );
     }
 
     #[test]
     fn classify_route_accepts_realtime_websocket_get() {
-        let result = classify_route(
-            &Method::GET,
-            "/codex/v1/realtime",
-            &HeaderMap::new(),
-            None,
-        )
-        .expect("realtime ws GET should classify");
+        let result = classify_route(&Method::GET, "/codex/v1/realtime", &HeaderMap::new(), None)
+            .expect("realtime ws GET should classify");
         assert_eq!(result.operation, OperationFamily::OpenAiRealtimeWebSocket);
         assert_eq!(result.protocol, ProtocolKind::OpenAi);
     }

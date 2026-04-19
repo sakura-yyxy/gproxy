@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use crate::openai::realtime_calls::types::{HttpMethod, PathParameters, QueryParameters, RequestHeaders};
+use crate::openai::realtime_calls::types::{
+    HttpMethod, PathParameters, QueryParameters, RequestHeaders,
+};
 
 /// Request descriptor for `POST /v1/realtime/calls/{call_id}/hangup`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

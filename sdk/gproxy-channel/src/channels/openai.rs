@@ -317,30 +317,54 @@ fn openai_request_path(request: &PreparedRequest) -> Result<String, UpstreamErro
             Ok("/v1/realtime/client_secrets".to_string())
         }
         OperationFamily::RealtimeCallAccept => {
-            let call_id = request.path_params.get("call_id").cloned().unwrap_or_default();
+            let call_id = request
+                .path_params
+                .get("call_id")
+                .cloned()
+                .unwrap_or_default();
             if call_id.is_empty() {
-                return Err(UpstreamError::Channel("missing call_id path param".to_string()));
+                return Err(UpstreamError::Channel(
+                    "missing call_id path param".to_string(),
+                ));
             }
             Ok(format!("/v1/realtime/calls/{call_id}/accept"))
         }
         OperationFamily::RealtimeCallHangup => {
-            let call_id = request.path_params.get("call_id").cloned().unwrap_or_default();
+            let call_id = request
+                .path_params
+                .get("call_id")
+                .cloned()
+                .unwrap_or_default();
             if call_id.is_empty() {
-                return Err(UpstreamError::Channel("missing call_id path param".to_string()));
+                return Err(UpstreamError::Channel(
+                    "missing call_id path param".to_string(),
+                ));
             }
             Ok(format!("/v1/realtime/calls/{call_id}/hangup"))
         }
         OperationFamily::RealtimeCallRefer => {
-            let call_id = request.path_params.get("call_id").cloned().unwrap_or_default();
+            let call_id = request
+                .path_params
+                .get("call_id")
+                .cloned()
+                .unwrap_or_default();
             if call_id.is_empty() {
-                return Err(UpstreamError::Channel("missing call_id path param".to_string()));
+                return Err(UpstreamError::Channel(
+                    "missing call_id path param".to_string(),
+                ));
             }
             Ok(format!("/v1/realtime/calls/{call_id}/refer"))
         }
         OperationFamily::RealtimeCallReject => {
-            let call_id = request.path_params.get("call_id").cloned().unwrap_or_default();
+            let call_id = request
+                .path_params
+                .get("call_id")
+                .cloned()
+                .unwrap_or_default();
             if call_id.is_empty() {
-                return Err(UpstreamError::Channel("missing call_id path param".to_string()));
+                return Err(UpstreamError::Channel(
+                    "missing call_id path param".to_string(),
+                ));
             }
             Ok(format!("/v1/realtime/calls/{call_id}/reject"))
         }

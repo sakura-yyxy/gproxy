@@ -158,9 +158,7 @@ pub enum RealtimeImageDetail {
 pub enum RealtimeMessageContentPart {
     /// `input_text` — plain text input from system/user messages.
     #[serde(rename = "input_text")]
-    InputText {
-        text: String,
-    },
+    InputText { text: String },
     /// `input_audio` — base64 audio bytes with optional transcript (user messages).
     #[serde(rename = "input_audio")]
     InputAudio {
@@ -179,9 +177,7 @@ pub enum RealtimeMessageContentPart {
     },
     /// `output_text` — plain text output (assistant messages).
     #[serde(rename = "output_text")]
-    OutputText {
-        text: String,
-    },
+    OutputText { text: String },
     /// `output_audio` — base64 audio bytes with transcript (assistant messages).
     #[serde(rename = "output_audio")]
     OutputAudio {

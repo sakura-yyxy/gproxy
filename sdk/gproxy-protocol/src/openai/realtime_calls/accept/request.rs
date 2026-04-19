@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::openai::realtime::types::RealtimeSession;
-use crate::openai::realtime_calls::types::{HttpMethod, PathParameters, QueryParameters, RequestHeaders};
+use crate::openai::realtime_calls::types::{
+    HttpMethod, PathParameters, QueryParameters, RequestHeaders,
+};
 
 /// Request descriptor for `POST /v1/realtime/calls/{call_id}/accept`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
