@@ -70,6 +70,8 @@ pub struct ExecuteRequest {
     /// rewriting so clients see the alias name they sent, not the resolved
     /// upstream model.
     pub response_model_override: Option<String>,
+    /// Path parameters extracted from the downstream route (e.g. `call_id`).
+    pub path_params: std::collections::BTreeMap<String, String>,
 }
 
 /// Result of an engine execution.
@@ -1202,7 +1204,7 @@ impl GproxyEngine {
             model: request.model.clone(),
             body,
             headers: request.headers,
-            path_params: std::collections::BTreeMap::new(),
+            path_params: request.path_params,
         };
 
         let mut prepared = provider.finalize_request(prepared)?;
@@ -1478,7 +1480,7 @@ impl GproxyEngine {
             model: request.model.clone(),
             body,
             headers: request.headers,
-            path_params: std::collections::BTreeMap::new(),
+            path_params: request.path_params,
         };
 
         let mut prepared = provider.finalize_request(prepared)?;

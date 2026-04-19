@@ -50,6 +50,26 @@ pub fn router(state: Arc<AppState>) -> Router<Arc<AppState>> {
         .route("/{provider}/v1/embeddings", post(handler::proxy))
         .route("/{provider}/v1/images/generations", post(handler::proxy))
         .route("/{provider}/v1/images/edits", post(handler::proxy))
+        .route(
+            "/{provider}/v1/realtime/client_secrets",
+            post(handler::proxy),
+        )
+        .route(
+            "/{provider}/v1/realtime/calls/{call_id}/accept",
+            post(handler::proxy),
+        )
+        .route(
+            "/{provider}/v1/realtime/calls/{call_id}/hangup",
+            post(handler::proxy),
+        )
+        .route(
+            "/{provider}/v1/realtime/calls/{call_id}/refer",
+            post(handler::proxy),
+        )
+        .route(
+            "/{provider}/v1/realtime/calls/{call_id}/reject",
+            post(handler::proxy),
+        )
         .route("/{provider}/v1/models", get(handler::proxy))
         .route("/{provider}/v1/models/{*model_id}", get(handler::proxy))
         .route("/{provider}/v1beta/models", get(handler::proxy))
@@ -71,6 +91,26 @@ pub fn router(state: Arc<AppState>) -> Router<Arc<AppState>> {
         .route("/v1/embeddings", post(handler::proxy_unscoped))
         .route("/v1/images/generations", post(handler::proxy_unscoped))
         .route("/v1/images/edits", post(handler::proxy_unscoped))
+        .route(
+            "/v1/realtime/client_secrets",
+            post(handler::proxy_unscoped),
+        )
+        .route(
+            "/v1/realtime/calls/{call_id}/accept",
+            post(handler::proxy_unscoped),
+        )
+        .route(
+            "/v1/realtime/calls/{call_id}/hangup",
+            post(handler::proxy_unscoped),
+        )
+        .route(
+            "/v1/realtime/calls/{call_id}/refer",
+            post(handler::proxy_unscoped),
+        )
+        .route(
+            "/v1/realtime/calls/{call_id}/reject",
+            post(handler::proxy_unscoped),
+        )
         .route("/v1/models", get(handler::proxy_unscoped))
         .route("/v1/models/{*model_id}", get(handler::proxy_unscoped))
         // Unscoped Gemini v1beta routes (model in path carries provider prefix)
@@ -121,12 +161,20 @@ pub fn router(state: Arc<AppState>) -> Router<Arc<AppState>> {
             get(websocket::openai_responses_ws),
         )
         .route(
+            "/{provider}/v1/realtime",
+            get(websocket::openai_realtime_ws),
+        )
+        .route(
             "/{provider}/v1beta/models/{*target}",
             get(websocket::gemini_live),
         )
         .route(
             "/v1/responses",
             get(websocket::openai_responses_ws_unscoped),
+        )
+        .route(
+            "/v1/realtime",
+            get(websocket::openai_realtime_ws_unscoped),
         )
         .layer(from_fn(sanitize_middleware))
         .layer(from_fn_with_state(state.clone(), require_user_middleware));

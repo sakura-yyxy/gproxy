@@ -235,10 +235,57 @@ pub async fn openai_responses_ws(
             user_key_id,
             headers_clone,
             socket,
+            OperationFamily::OpenAiResponseWebSocket,
+            "/v1/responses",
         )
         .await
         {
             tracing::warn!(error = %e, "openai responses websocket error");
+        }
+    }))
+}
+
+/// OpenAI Realtime WebSocket: `GET /{provider}/v1/realtime`
+pub async fn openai_realtime_ws(
+    State(state): State<Arc<AppState>>,
+    Path(provider_name): Path<String>,
+    Query(params): Query<WsQueryParams>,
+    Extension(authenticated): Extension<AuthenticatedUser>,
+    headers: HeaderMap,
+    ws: WebSocketUpgrade,
+) -> Result<Response, HttpError> {
+    let user_key = authenticated.0;
+    let model = params
+        .model
+        .as_deref()
+        .map(|model| canonicalize_openai_ws_model(&state, &provider_name, model))
+        .transpose()?;
+
+    if let Some(ref m) = model
+        && !state.check_model_permission(user_key.user_id, &provider_name, m)
+    {
+        return Err(HttpError::forbidden("model not authorized for this user"));
+    }
+
+    let user_id = user_key.user_id;
+    let user_key_id = user_key.id;
+    let headers_clone = headers.clone();
+
+    Ok(ws.on_upgrade(move |socket| async move {
+        if let Err(e) = handle_openai_ws(
+            state,
+            provider_name,
+            model,
+            user_id,
+            user_key_id,
+            headers_clone,
+            socket,
+            OperationFamily::OpenAiRealtimeWebSocket,
+            "/v1/realtime",
+        )
+        .await
+        {
+            tracing::warn!(error = %e, "openai realtime websocket error");
         }
     }))
 }
@@ -352,10 +399,75 @@ pub async fn openai_responses_ws_unscoped(
             user_key_id,
             headers_clone,
             socket,
+            OperationFamily::OpenAiResponseWebSocket,
+            "/v1/responses",
         )
         .await
         {
             tracing::warn!(error = %e, "openai responses websocket error (unscoped)");
+        }
+    }))
+}
+
+/// OpenAI Realtime WebSocket (unscoped): `GET /v1/realtime`
+pub async fn openai_realtime_ws_unscoped(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<WsQueryParams>,
+    Extension(authenticated): Extension<AuthenticatedUser>,
+    headers: HeaderMap,
+    ws: WebSocketUpgrade,
+) -> Result<Response, HttpError> {
+    let user_key = authenticated.0;
+    let model = params.model.clone();
+
+    let Some(model_name) = &model else {
+        return Err(HttpError::bad_request(
+            "missing model query parameter for unscoped websocket",
+        ));
+    };
+
+    let (target_provider, target_model, permission_model) =
+        if let Some(alias) = state.resolve_model_alias(model_name) {
+            (
+                alias.provider_name,
+                Some(alias.model_id),
+                model_name.clone(),
+            )
+        } else if let Some((provider, model)) = model_name.split_once('/') {
+            (
+                provider.to_string(),
+                Some(model.to_string()),
+                model.to_string(),
+            )
+        } else {
+            return Err(HttpError::bad_request(
+                "model must have provider prefix (provider/model) or match an alias",
+            ));
+        };
+
+    if !state.check_model_permission(user_key.user_id, &target_provider, &permission_model) {
+        return Err(HttpError::forbidden("model not authorized for this user"));
+    }
+
+    let user_id = user_key.user_id;
+    let user_key_id = user_key.id;
+    let headers_clone = headers.clone();
+
+    Ok(ws.on_upgrade(move |socket| async move {
+        if let Err(e) = handle_openai_ws(
+            state,
+            target_provider,
+            target_model,
+            user_id,
+            user_key_id,
+            headers_clone,
+            socket,
+            OperationFamily::OpenAiRealtimeWebSocket,
+            "/v1/realtime",
+        )
+        .await
+        {
+            tracing::warn!(error = %e, "openai realtime websocket error (unscoped)");
         }
     }))
 }
@@ -372,6 +484,8 @@ async fn handle_openai_ws(
     user_key_id: i64,
     headers: HeaderMap,
     mut downstream: WebSocket,
+    operation: OperationFamily,
+    upstream_path: &str,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let trace_id = super::handler::generate_trace_id();
     // Try upstream WebSocket via SDK
@@ -382,7 +496,7 @@ async fn handle_openai_ws(
         user_key_id,
         model: model.clone(),
         credential_index: None,
-        operation: OperationFamily::OpenAiResponseWebSocket,
+        operation,
         protocol: ProtocolKind::OpenAi,
         trace_id,
     };
@@ -391,9 +505,9 @@ async fn handle_openai_ws(
         .engine()
         .connect_upstream_ws(
             &provider_name,
-            OperationFamily::OpenAiResponseWebSocket,
+            operation,
             ProtocolKind::OpenAi,
-            "/v1/responses",
+            upstream_path,
             model.as_deref(),
         )
         .await
@@ -924,6 +1038,7 @@ async fn start_http_request(
             model: Some(effective_model.clone()),
             forced_credential_index: None,
             response_model_override: None,
+            path_params: std::collections::BTreeMap::new(),
         })
         .await;
 

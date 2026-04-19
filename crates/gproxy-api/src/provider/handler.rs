@@ -263,6 +263,7 @@ pub async fn proxy(
             model: effective_model.clone(),
             forced_credential_index,
             response_model_override: alias_model_name.clone(),
+            path_params: classification.path_params.clone(),
         })
         .await
     {
@@ -579,6 +580,7 @@ pub async fn proxy_unscoped(
             model: Some(target_model.clone()),
             forced_credential_index: None,
             response_model_override: alias_model_override.clone(),
+            path_params: classification.path_params.clone(),
         })
         .await
     {
@@ -798,6 +800,7 @@ pub async fn proxy_unscoped_files(
             model: None,
             forced_credential_index,
             response_model_override: None,
+            path_params: classification.path_params.clone(),
         })
         .await
     {
@@ -1092,6 +1095,7 @@ async fn execute_live_model_list(
             model: None,
             forced_credential_index: None,
             response_model_override: None,
+            path_params: std::collections::BTreeMap::new(),
         })
         .await
         .map_err(Into::into)

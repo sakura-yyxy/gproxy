@@ -319,6 +319,7 @@ pub async fn pull_models(
             model: None,
             forced_credential_index: None,
             response_model_override: None,
+            path_params: std::collections::BTreeMap::new(),
         })
         .await
         .map_err(|e| HttpError::internal(format!("engine execute failed: {e}")))?;

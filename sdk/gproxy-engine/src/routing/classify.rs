@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use http::{HeaderMap, Method};
 use serde::Deserialize;
 
@@ -5,7 +7,7 @@ use crate::routing::error::RoutingError;
 use gproxy_protocol::kinds::{OperationFamily, ProtocolKind};
 
 /// Classification metadata derived from an incoming request.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Classification {
     /// The normalized operation family inferred from the route and payload.
     pub operation: OperationFamily,
@@ -13,15 +15,32 @@ pub struct Classification {
     pub protocol: ProtocolKind,
     /// Whether the classified operation is a streaming operation.
     pub is_stream: bool,
+    /// Path parameters extracted from the route (e.g. `{"call_id": "rtc_123"}`).
+    pub path_params: BTreeMap<String, String>,
 }
 
 impl Classification {
-    /// Creates a new classification with a derived `is_stream` flag.
-    pub const fn new(operation: OperationFamily, protocol: ProtocolKind) -> Self {
+    /// Creates a new classification with a derived `is_stream` flag and no path parameters.
+    pub fn new(operation: OperationFamily, protocol: ProtocolKind) -> Self {
         Self {
             operation,
             protocol,
             is_stream: operation.is_stream(),
+            path_params: BTreeMap::new(),
+        }
+    }
+
+    /// Creates a new classification with explicit path parameters.
+    pub fn with_path_params(
+        operation: OperationFamily,
+        protocol: ProtocolKind,
+        path_params: BTreeMap<String, String>,
+    ) -> Self {
+        Self {
+            operation,
+            protocol,
+            is_stream: operation.is_stream(),
+            path_params,
         }
     }
 }
@@ -40,6 +59,12 @@ pub fn classify_route(
     let body = body.unwrap_or_default();
 
     if *method == Method::GET {
+        if normalized_path == "/realtime" {
+            return Ok(Classification::new(
+                OperationFamily::OpenAiRealtimeWebSocket,
+                ProtocolKind::OpenAi,
+            ));
+        }
         if normalized_path == "/models" {
             return Ok(Classification::new(
                 OperationFamily::ModelList,
@@ -91,6 +116,23 @@ pub fn classify_route(
         return Ok(Classification::new(
             OperationFamily::FileUpload,
             classify_models_protocol(headers, query),
+        ));
+    }
+
+    if normalized_path == "/realtime/client_secrets" {
+        return Ok(Classification::new(
+            OperationFamily::RealtimeClientSecretCreate,
+            ProtocolKind::OpenAi,
+        ));
+    }
+
+    if let Some((operation, call_id)) = classify_realtime_call_path(&normalized_path) {
+        let mut path_params = BTreeMap::new();
+        path_params.insert("call_id".to_string(), call_id);
+        return Ok(Classification::with_path_params(
+            operation,
+            ProtocolKind::OpenAi,
+            path_params,
         ));
     }
 
@@ -338,6 +380,22 @@ fn read_stream_flag(body: &[u8]) -> bool {
         .unwrap_or(false)
 }
 
+fn classify_realtime_call_path(path: &str) -> Option<(OperationFamily, String)> {
+    let tail = path.strip_prefix("/realtime/calls/")?;
+    let (call_id, action) = tail.rsplit_once('/')?;
+    if call_id.is_empty() || call_id.contains('/') {
+        return None;
+    }
+    let operation = match action {
+        "accept" => OperationFamily::RealtimeCallAccept,
+        "hangup" => OperationFamily::RealtimeCallHangup,
+        "refer" => OperationFamily::RealtimeCallRefer,
+        "reject" => OperationFamily::RealtimeCallReject,
+        _ => return None,
+    };
+    Some((operation, call_id.to_string()))
+}
+
 #[cfg(test)]
 mod tests {
     use http::{HeaderMap, Method};
@@ -371,5 +429,88 @@ mod tests {
 
         assert_eq!(result.operation, OperationFamily::StreamGenerateContent);
         assert_eq!(result.protocol, ProtocolKind::OpenAiResponse);
+    }
+
+    #[test]
+    fn classify_route_accepts_realtime_client_secrets() {
+        let result = classify_route(
+            &Method::POST,
+            "/codex/v1/realtime/client_secrets",
+            &HeaderMap::new(),
+            None,
+        )
+        .expect("realtime client_secrets should classify");
+        assert_eq!(
+            result.operation,
+            OperationFamily::RealtimeClientSecretCreate
+        );
+        assert_eq!(result.protocol, ProtocolKind::OpenAi);
+        assert!(result.path_params.is_empty());
+    }
+
+    #[test]
+    fn classify_route_accepts_realtime_call_accept() {
+        let result = classify_route(
+            &Method::POST,
+            "/codex/v1/realtime/calls/rtc_123/accept",
+            &HeaderMap::new(),
+            None,
+        )
+        .expect("realtime call accept should classify");
+        assert_eq!(result.operation, OperationFamily::RealtimeCallAccept);
+        assert_eq!(result.protocol, ProtocolKind::OpenAi);
+        assert_eq!(result.path_params.get("call_id").map(String::as_str), Some("rtc_123"));
+    }
+
+    #[test]
+    fn classify_route_accepts_realtime_call_hangup() {
+        let result = classify_route(
+            &Method::POST,
+            "/v1/realtime/calls/rtc_abc/hangup",
+            &HeaderMap::new(),
+            None,
+        )
+        .expect("realtime call hangup should classify");
+        assert_eq!(result.operation, OperationFamily::RealtimeCallHangup);
+        assert_eq!(result.path_params.get("call_id").map(String::as_str), Some("rtc_abc"));
+    }
+
+    #[test]
+    fn classify_route_accepts_realtime_call_refer() {
+        let result = classify_route(
+            &Method::POST,
+            "/v1/realtime/calls/rtc_x/refer",
+            &HeaderMap::new(),
+            None,
+        )
+        .expect("realtime call refer should classify");
+        assert_eq!(result.operation, OperationFamily::RealtimeCallRefer);
+        assert_eq!(result.path_params.get("call_id").map(String::as_str), Some("rtc_x"));
+    }
+
+    #[test]
+    fn classify_route_accepts_realtime_call_reject() {
+        let result = classify_route(
+            &Method::POST,
+            "/v1/realtime/calls/rtc_y/reject",
+            &HeaderMap::new(),
+            None,
+        )
+        .expect("realtime call reject should classify");
+        assert_eq!(result.operation, OperationFamily::RealtimeCallReject);
+        assert_eq!(result.path_params.get("call_id").map(String::as_str), Some("rtc_y"));
+    }
+
+    #[test]
+    fn classify_route_accepts_realtime_websocket_get() {
+        let result = classify_route(
+            &Method::GET,
+            "/codex/v1/realtime",
+            &HeaderMap::new(),
+            None,
+        )
+        .expect("realtime ws GET should classify");
+        assert_eq!(result.operation, OperationFamily::OpenAiRealtimeWebSocket);
+        assert_eq!(result.protocol, ProtocolKind::OpenAi);
     }
 }
