@@ -8,6 +8,9 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
+pub use crate::openai::count_tokens::types::{
+    ResponseInputFile, ResponseInputImage, ResponseInputText,
+};
 pub use crate::openai::create_response::types::{HttpMethod, JsonObject, Metadata};
 
 /// Free-form conversation role string (`system`, `user`, `assistant`).
@@ -669,6 +672,24 @@ pub struct RealtimeRetentionRatioTokenLimits {
     pub post_instructions: Option<u64>,
 }
 
+/// Value for a single prompt-template variable.
+///
+/// Per upstream docs, each substitution may be a plain string or one of the
+/// Responses API input content parts (`input_text` / `input_image` /
+/// `input_file`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum RealtimePromptVariableValue {
+    /// Plain-string substitution.
+    Text(String),
+    /// Structured `input_text` part.
+    InputText(ResponseInputText),
+    /// Structured `input_image` part.
+    InputImage(ResponseInputImage),
+    /// Structured `input_file` part.
+    InputFile(ResponseInputFile),
+}
+
 /// Prompt-template reference (`{ id, version?, variables? }`).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RealtimePromptRef {
@@ -677,7 +698,7 @@ pub struct RealtimePromptRef {
     pub version: Option<String>,
     /// Map of variable name to substitution value (string or structured input).
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub variables: Option<BTreeMap<String, serde_json::Value>>,
+    pub variables: Option<BTreeMap<String, RealtimePromptVariableValue>>,
     #[serde(flatten, default, skip_serializing_if = "JsonObject::is_empty")]
     pub extra: JsonObject,
 }
