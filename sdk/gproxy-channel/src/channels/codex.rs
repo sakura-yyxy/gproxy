@@ -1071,7 +1071,9 @@ fn codex_request_path(request: &PreparedRequest) -> Result<String, UpstreamError
         }
         OperationFamily::Compact => Ok("/responses/compact".to_string()),
         OperationFamily::OpenAiResponseWebSocket => Ok("/responses".to_string()),
-        OperationFamily::OpenAiRealtimeWebSocket => Ok("/realtime".to_string()),
+        OperationFamily::OpenAiRealtimeWebSocket => {
+            Ok("/realtime?intent=quicksilver".to_string())
+        }
         OperationFamily::RealtimeCallCreate => Ok("/realtime/calls".to_string()),
         OperationFamily::RealtimeCallAccept => {
             let call_id = request
