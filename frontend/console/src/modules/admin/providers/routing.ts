@@ -28,6 +28,7 @@ export const ROUTING_OPERATION_OPTIONS = [
   "openai_response_websocket",
   "openai_realtime_websocket",
   "realtime_call_accept",
+  "realtime_call_create",
   "realtime_call_hangup",
   "realtime_call_refer",
   "realtime_call_reject",

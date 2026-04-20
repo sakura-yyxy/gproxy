@@ -642,6 +642,7 @@ impl Channel for CodexChannel {
                 ProtocolKind::OpenAi,
             ),
             pass(OperationFamily::RealtimeCallAccept, ProtocolKind::OpenAi),
+            pass(OperationFamily::RealtimeCallCreate, ProtocolKind::OpenAi),
             pass(OperationFamily::RealtimeCallHangup, ProtocolKind::OpenAi),
             pass(OperationFamily::RealtimeCallRefer, ProtocolKind::OpenAi),
             pass(OperationFamily::RealtimeCallReject, ProtocolKind::OpenAi),
@@ -1071,6 +1072,7 @@ fn codex_request_path(request: &PreparedRequest) -> Result<String, UpstreamError
         OperationFamily::Compact => Ok("/responses/compact".to_string()),
         OperationFamily::OpenAiResponseWebSocket => Ok("/responses".to_string()),
         OperationFamily::OpenAiRealtimeWebSocket => Ok("/realtime".to_string()),
+        OperationFamily::RealtimeCallCreate => Ok("/realtime/calls".to_string()),
         OperationFamily::RealtimeCallAccept => {
             let call_id = request
                 .path_params

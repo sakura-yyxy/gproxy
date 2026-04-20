@@ -129,6 +129,13 @@ pub fn classify_route(
         ));
     }
 
+    if normalized_path == "/realtime/calls" {
+        return Ok(Classification::new(
+            OperationFamily::RealtimeCallCreate,
+            ProtocolKind::OpenAi,
+        ));
+    }
+
     if normalized_path == "/responses" {
         return Ok(Classification::new(
             stream_or_non_stream(body),
@@ -422,6 +429,20 @@ mod tests {
 
         assert_eq!(result.operation, OperationFamily::StreamGenerateContent);
         assert_eq!(result.protocol, ProtocolKind::OpenAiResponse);
+    }
+
+    #[test]
+    fn classify_route_accepts_realtime_call_create() {
+        let result = classify_route(
+            &Method::POST,
+            "/codex/v1/realtime/calls",
+            &HeaderMap::new(),
+            None,
+        )
+        .expect("realtime call create should classify");
+        assert_eq!(result.operation, OperationFamily::RealtimeCallCreate);
+        assert_eq!(result.protocol, ProtocolKind::OpenAi);
+        assert!(result.path_params.is_empty());
     }
 
     #[test]

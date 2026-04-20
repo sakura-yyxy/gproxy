@@ -31,6 +31,8 @@ pub enum OperationFamily {
     OpenAiRealtimeWebSocket,
     #[serde(rename = "realtime_call_accept")]
     RealtimeCallAccept,
+    #[serde(rename = "realtime_call_create")]
+    RealtimeCallCreate,
     #[serde(rename = "realtime_call_hangup")]
     RealtimeCallHangup,
     #[serde(rename = "realtime_call_refer")]
@@ -85,6 +87,7 @@ impl fmt::Display for OperationFamily {
             Self::OpenAiResponseWebSocket => "openai_response_websocket",
             Self::OpenAiRealtimeWebSocket => "openai_realtime_websocket",
             Self::RealtimeCallAccept => "realtime_call_accept",
+            Self::RealtimeCallCreate => "realtime_call_create",
             Self::RealtimeCallHangup => "realtime_call_hangup",
             Self::RealtimeCallRefer => "realtime_call_refer",
             Self::RealtimeCallReject => "realtime_call_reject",
@@ -118,6 +121,7 @@ impl TryFrom<&str> for OperationFamily {
             "openai_response_websocket" => Ok(Self::OpenAiResponseWebSocket),
             "openai_realtime_websocket" => Ok(Self::OpenAiRealtimeWebSocket),
             "realtime_call_accept" => Ok(Self::RealtimeCallAccept),
+            "realtime_call_create" => Ok(Self::RealtimeCallCreate),
             "realtime_call_hangup" => Ok(Self::RealtimeCallHangup),
             "realtime_call_refer" => Ok(Self::RealtimeCallRefer),
             "realtime_call_reject" => Ok(Self::RealtimeCallReject),

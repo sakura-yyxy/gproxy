@@ -50,6 +50,7 @@ pub fn router(state: Arc<AppState>) -> Router<Arc<AppState>> {
         .route("/{provider}/v1/embeddings", post(handler::proxy))
         .route("/{provider}/v1/images/generations", post(handler::proxy))
         .route("/{provider}/v1/images/edits", post(handler::proxy))
+        .route("/{provider}/v1/realtime/calls", post(handler::proxy))
         .route(
             "/{provider}/v1/realtime/calls/{call_id}/accept",
             post(handler::proxy),
@@ -87,6 +88,7 @@ pub fn router(state: Arc<AppState>) -> Router<Arc<AppState>> {
         .route("/v1/embeddings", post(handler::proxy_unscoped))
         .route("/v1/images/generations", post(handler::proxy_unscoped))
         .route("/v1/images/edits", post(handler::proxy_unscoped))
+        .route("/v1/realtime/calls", post(handler::proxy_unscoped))
         .route(
             "/v1/realtime/calls/{call_id}/accept",
             post(handler::proxy_unscoped),
