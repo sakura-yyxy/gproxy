@@ -407,6 +407,11 @@ impl<C: Channel> ProviderRuntime for ProviderInstance<C> {
                     OperationFamily::OpenAiResponseWebSocket,
                     ProtocolKind::OpenAi,
                 )
+            } else if path == "/v1/realtime" {
+                RouteKey::new(
+                    OperationFamily::OpenAiRealtimeWebSocket,
+                    ProtocolKind::OpenAi,
+                )
             } else {
                 RouteKey::new(OperationFamily::GeminiLive, ProtocolKind::Gemini)
             },
