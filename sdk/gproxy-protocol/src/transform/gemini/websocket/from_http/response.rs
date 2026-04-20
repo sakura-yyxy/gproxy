@@ -50,31 +50,33 @@ pub fn candidate_to_server_message(
         .as_ref()
         .and_then(content_as_pure_function_calls);
 
-    Some(GeminiLiveMessageResponse::Message(Box::new(match as_tool_calls {
-        Some(function_calls) => GeminiBidiGenerateContentServerMessage {
-            usage_metadata,
-            message_type: GeminiBidiGenerateContentServerMessageType::ToolCall {
-                tool_call: GeminiBidiGenerateContentToolCall {
-                    function_calls: Some(function_calls),
+    Some(GeminiLiveMessageResponse::Message(Box::new(
+        match as_tool_calls {
+            Some(function_calls) => GeminiBidiGenerateContentServerMessage {
+                usage_metadata,
+                message_type: GeminiBidiGenerateContentServerMessageType::ToolCall {
+                    tool_call: GeminiBidiGenerateContentToolCall {
+                        function_calls: Some(function_calls),
+                    },
+                },
+            },
+            None => GeminiBidiGenerateContentServerMessage {
+                usage_metadata,
+                message_type: GeminiBidiGenerateContentServerMessageType::ServerContent {
+                    server_content: Box::new(GeminiBidiGenerateContentServerContent {
+                        generation_complete: generation_complete.then_some(true),
+                        turn_complete: generation_complete.then_some(true),
+                        interrupted: None,
+                        grounding_metadata: candidate.grounding_metadata,
+                        input_transcription: None,
+                        output_transcription: None,
+                        url_context_metadata: candidate.url_context_metadata,
+                        model_turn: candidate.content,
+                    }),
                 },
             },
         },
-        None => GeminiBidiGenerateContentServerMessage {
-            usage_metadata,
-            message_type: GeminiBidiGenerateContentServerMessageType::ServerContent {
-                server_content: Box::new(GeminiBidiGenerateContentServerContent {
-                    generation_complete: generation_complete.then_some(true),
-                    turn_complete: generation_complete.then_some(true),
-                    interrupted: None,
-                    grounding_metadata: candidate.grounding_metadata,
-                    input_transcription: None,
-                    output_transcription: None,
-                    url_context_metadata: candidate.url_context_metadata,
-                    model_turn: candidate.content,
-                }),
-            },
-        },
-    })))
+    )))
 }
 
 fn content_as_pure_function_calls(content: &GeminiContent) -> Option<Vec<GeminiFunctionCall>> {

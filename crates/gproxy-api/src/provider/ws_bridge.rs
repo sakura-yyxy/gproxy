@@ -519,6 +519,8 @@ mod tests {
         assert_eq!(usage.input_tokens, Some(1));
         // Same payload routed through OpenAiResponseWebSocket should NOT match because
         // it's not a ResponseStreamEvent.
-        assert!(extract_ws_usage("openai", OperationFamily::OpenAiResponseWebSocket, msg).is_none());
+        assert!(
+            extract_ws_usage("openai", OperationFamily::OpenAiResponseWebSocket, msg).is_none()
+        );
     }
 }
