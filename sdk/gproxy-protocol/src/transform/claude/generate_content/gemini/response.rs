@@ -171,7 +171,7 @@ impl TryFrom<GeminiGenerateContentResponse> for ClaudeCreateMessageResponse {
                         headers: ClaudeResponseHeaders {
                             extra: headers.extra,
                         },
-                        body: BetaMessage {
+                        body: Box::new(BetaMessage {
                             id: body.response_id.unwrap_or_default(),
                             container: None,
                             content,
@@ -182,7 +182,7 @@ impl TryFrom<GeminiGenerateContentResponse> for ClaudeCreateMessageResponse {
                             stop_sequence: None,
                             type_: BetaMessageType::Message,
                             usage,
-                        },
+                        }),
                     }
                 } else {
                     let block_reason = body
@@ -214,7 +214,7 @@ impl TryFrom<GeminiGenerateContentResponse> for ClaudeCreateMessageResponse {
                         headers: ClaudeResponseHeaders {
                             extra: headers.extra,
                         },
-                        body: BetaMessage {
+                        body: Box::new(BetaMessage {
                             id: body.response_id.unwrap_or_default(),
                             container: None,
                             content: vec![BetaContentBlock::Text(BetaTextBlock {
@@ -229,7 +229,7 @@ impl TryFrom<GeminiGenerateContentResponse> for ClaudeCreateMessageResponse {
                             stop_sequence: None,
                             type_: BetaMessageType::Message,
                             usage,
-                        },
+                        }),
                     }
                 }
             }

@@ -128,7 +128,7 @@ impl TryFrom<ClaudeCreateMessageResponse> for GeminiGenerateContentResponse {
                     headers: GeminiResponseHeaders {
                         extra: headers.extra,
                     },
-                    body: ResponseBody {
+                    body: Box::new(ResponseBody {
                         candidates: Some(vec![GeminiCandidate {
                             content: Some(GeminiContent {
                                 parts,
@@ -144,7 +144,7 @@ impl TryFrom<ClaudeCreateMessageResponse> for GeminiGenerateContentResponse {
                         model_version: Some(claude_model_to_string(&body.model)),
                         response_id: Some(body.id),
                         model_status: None,
-                    },
+                    }),
                 }
             }
             ClaudeCreateMessageResponse::Error {

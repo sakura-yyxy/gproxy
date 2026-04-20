@@ -530,7 +530,7 @@ async fn handle_openai_ws(
                 credential_index: Some(ws_meta.credential_index),
                 ..ctx
             };
-            let mut bridge = super::ws_bridge::PassthroughBridge::new("openai");
+            let mut bridge = super::ws_bridge::PassthroughBridge::new("openai", ctx.operation);
             run_ws_bridge_with_protocol(&mut downstream, &mut upstream, &mut bridge, &ctx).await;
         }
         Ok(WsConnectionResult::NeedsProtocolBridge {
@@ -611,7 +611,7 @@ async fn handle_gemini_live_ws(
                 credential_index: Some(ws_meta.credential_index),
                 ..ctx
             };
-            let mut bridge = super::ws_bridge::PassthroughBridge::new("gemini");
+            let mut bridge = super::ws_bridge::PassthroughBridge::new("gemini", ctx.operation);
             run_ws_bridge_with_protocol(&mut downstream, &mut upstream, &mut bridge, &ctx).await;
         }
         WsConnectionResult::NeedsProtocolBridge {

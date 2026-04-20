@@ -200,7 +200,7 @@ impl TryFrom<OpenAiChatCompletionsResponse> for OpenAiCreateResponseResponse {
                     headers: OpenAiResponseHeaders {
                         extra: headers.extra,
                     },
-                    body: ResponseBody {
+                    body: Box::new(ResponseBody {
                         id: body.id,
                         created_at: body.created,
                         error: None,
@@ -274,7 +274,7 @@ impl TryFrom<OpenAiChatCompletionsResponse> for OpenAiCreateResponseResponse {
                             }
                         }),
                         user: None,
-                    },
+                    }),
                 }
             }
             OpenAiChatCompletionsResponse::Error {

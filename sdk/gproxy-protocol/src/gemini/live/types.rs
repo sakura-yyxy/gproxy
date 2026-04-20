@@ -24,7 +24,7 @@ pub struct GeminiBidiGenerateContentClientMessage {
 #[serde(untagged)]
 pub enum GeminiBidiGenerateContentClientMessageType {
     Setup {
-        setup: GeminiBidiGenerateContentSetup,
+        setup: Box<GeminiBidiGenerateContentSetup>,
     },
     ClientContent {
         #[serde(rename = "clientContent")]
@@ -193,7 +193,7 @@ pub enum GeminiBidiGenerateContentServerMessageType {
     },
     ServerContent {
         #[serde(rename = "serverContent")]
-        server_content: GeminiBidiGenerateContentServerContent,
+        server_content: Box<GeminiBidiGenerateContentServerContent>,
     },
     ToolCall {
         #[serde(rename = "toolCall")]

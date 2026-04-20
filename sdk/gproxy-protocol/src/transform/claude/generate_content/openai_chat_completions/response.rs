@@ -162,7 +162,7 @@ impl TryFrom<OpenAiChatCompletionsResponse> for ClaudeCreateMessageResponse {
                     headers: ClaudeResponseHeaders {
                         extra: headers.extra,
                     },
-                    body: BetaMessage {
+                    body: Box::new(BetaMessage {
                         id: body.id,
                         container: None,
                         content,
@@ -173,7 +173,7 @@ impl TryFrom<OpenAiChatCompletionsResponse> for ClaudeCreateMessageResponse {
                         stop_sequence: None,
                         type_: BetaMessageType::Message,
                         usage,
-                    },
+                    }),
                 }
             }
             OpenAiChatCompletionsResponse::Error {

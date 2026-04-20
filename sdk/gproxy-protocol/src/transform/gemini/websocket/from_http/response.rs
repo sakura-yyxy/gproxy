@@ -50,7 +50,7 @@ pub fn candidate_to_server_message(
         .as_ref()
         .and_then(content_as_pure_function_calls);
 
-    Some(GeminiLiveMessageResponse::Message(match as_tool_calls {
+    Some(GeminiLiveMessageResponse::Message(Box::new(match as_tool_calls {
         Some(function_calls) => GeminiBidiGenerateContentServerMessage {
             usage_metadata,
             message_type: GeminiBidiGenerateContentServerMessageType::ToolCall {
@@ -62,7 +62,7 @@ pub fn candidate_to_server_message(
         None => GeminiBidiGenerateContentServerMessage {
             usage_metadata,
             message_type: GeminiBidiGenerateContentServerMessageType::ServerContent {
-                server_content: GeminiBidiGenerateContentServerContent {
+                server_content: Box::new(GeminiBidiGenerateContentServerContent {
                     generation_complete: generation_complete.then_some(true),
                     turn_complete: generation_complete.then_some(true),
                     interrupted: None,
@@ -71,10 +71,10 @@ pub fn candidate_to_server_message(
                     output_transcription: None,
                     url_context_metadata: candidate.url_context_metadata,
                     model_turn: candidate.content,
-                },
+                }),
             },
         },
-    }))
+    })))
 }
 
 fn content_as_pure_function_calls(content: &GeminiContent) -> Option<Vec<GeminiFunctionCall>> {
@@ -125,14 +125,14 @@ fn chunk_to_live_messages(
     }
 
     if messages.is_empty() && usage_metadata.is_some() {
-        messages.push(GeminiLiveMessageResponse::Message(
+        messages.push(GeminiLiveMessageResponse::Message(Box::new(
             GeminiBidiGenerateContentServerMessage {
                 usage_metadata,
                 message_type: GeminiBidiGenerateContentServerMessageType::ServerContent {
-                    server_content: GeminiBidiGenerateContentServerContent::default(),
+                    server_content: Box::new(GeminiBidiGenerateContentServerContent::default()),
                 },
             },
-        ));
+        )));
     }
 
     messages
@@ -167,7 +167,7 @@ pub fn gemini_nonstream_response_to_live_messages_with_context(
     let mut out = Vec::new();
     match value {
         GeminiGenerateContentResponse::Success { body, .. } => {
-            out.extend(chunk_to_live_messages(body, &mut ctx));
+            out.extend(chunk_to_live_messages(*body, &mut ctx));
         }
         GeminiGenerateContentResponse::Error { body, .. } => {
             out.push(GeminiLiveMessageResponse::Error(body));

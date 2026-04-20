@@ -325,7 +325,7 @@ impl TryFrom<GeminiGenerateContentResponse> for OpenAiCreateResponseResponse {
                     headers: OpenAiResponseHeaders {
                         extra: headers.extra,
                     },
-                    body: ResponseBody {
+                    body: Box::new(ResponseBody {
                         id: response_id,
                         created_at: 0,
                         error: None,
@@ -375,7 +375,7 @@ impl TryFrom<GeminiGenerateContentResponse> for OpenAiCreateResponseResponse {
                         truncation: None,
                         usage,
                         user: None,
-                    },
+                    }),
                 }
             }
             GeminiGenerateContentResponse::Error {

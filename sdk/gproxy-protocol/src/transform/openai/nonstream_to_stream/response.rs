@@ -20,6 +20,7 @@ impl TryFrom<OpenAiCreateResponseResponse> for Vec<ResponseStreamEvent> {
     fn try_from(value: OpenAiCreateResponseResponse) -> Result<Self, TransformError> {
         match value {
             OpenAiCreateResponseResponse::Success { body, .. } => {
+                let body = *body;
                 let mut events = Vec::new();
                 let mut next_sequence_number = 0_u64;
 

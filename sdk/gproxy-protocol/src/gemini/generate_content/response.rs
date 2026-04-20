@@ -60,7 +60,7 @@ pub enum GeminiGenerateContentResponse {
         /// Response headers.
         headers: GeminiResponseHeaders,
         /// Successful body.
-        body: ResponseBody,
+        body: Box<ResponseBody>,
     },
     Error {
         /// HTTP status code returned by server (typically non-2xx).

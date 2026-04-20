@@ -138,7 +138,7 @@ impl TryFrom<OpenAiChatCompletionsResponse> for GeminiGenerateContentResponse {
                     headers: GeminiResponseHeaders {
                         extra: headers.extra,
                     },
-                    body: ResponseBody {
+                    body: Box::new(ResponseBody {
                         candidates: Some(vec![GeminiCandidate {
                             content: Some(GeminiContent {
                                 parts,
@@ -153,7 +153,7 @@ impl TryFrom<OpenAiChatCompletionsResponse> for GeminiGenerateContentResponse {
                         model_version: Some(body.model),
                         response_id: Some(body.id),
                         model_status: None,
-                    },
+                    }),
                 }
             }
             OpenAiChatCompletionsResponse::Error {

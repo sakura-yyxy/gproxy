@@ -9,7 +9,7 @@ use crate::gemini::live::types::{
 #[serde(untagged)]
 pub enum GeminiLiveMessageResponse {
     /// Regular server message frame.
-    Message(GeminiBidiGenerateContentServerMessage),
+    Message(Box<GeminiBidiGenerateContentServerMessage>),
     /// Google API style error envelope.
     Error(GeminiApiErrorResponse),
 }

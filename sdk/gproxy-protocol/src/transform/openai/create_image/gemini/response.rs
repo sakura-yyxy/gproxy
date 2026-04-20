@@ -29,7 +29,7 @@ impl TryFrom<GeminiGenerateContentResponse> for OpenAiCreateImageResponse {
             } => OpenAiCreateImageResponse::Success {
                 stats_code,
                 headers: openai_response_headers_from_gemini(headers),
-                body: it::OpenAiCreateImageResponseBody::try_from(body)?,
+                body: it::OpenAiCreateImageResponseBody::try_from(*body)?,
             },
             GeminiGenerateContentResponse::Error {
                 stats_code,

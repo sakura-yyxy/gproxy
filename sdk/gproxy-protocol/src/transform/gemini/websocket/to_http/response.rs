@@ -77,6 +77,7 @@ pub fn server_message_to_chunk(
             })
         }
         GeminiBidiGenerateContentServerMessageType::ServerContent { server_content } => {
+            let server_content = *server_content;
             if server_content.interrupted == Some(true) {
                 ctx.push_warning(
                     "gemini websocket to_http response: dropped interrupted=true flag".to_string(),
@@ -194,7 +195,7 @@ pub fn gemini_live_messages_to_nonstream_response_with_context(
                 ));
             }
             GeminiLiveMessageResponse::Message(server) => {
-                if let Some(chunk) = server_message_to_chunk(server, &mut ctx) {
+                if let Some(chunk) = server_message_to_chunk(*server, &mut ctx) {
                     chunks.push(chunk);
                 }
             }
@@ -219,7 +220,7 @@ pub fn gemini_live_messages_to_nonstream_response_with_context(
         GeminiGenerateContentResponse::Success {
             stats_code: StatusCode::OK,
             headers: GeminiResponseHeaders::default(),
-            body: merged,
+            body: Box::new(merged),
         },
         ctx,
     ))
@@ -252,7 +253,7 @@ pub fn gemini_live_messages_to_stream_response_with_context(
     // Validate chunks can be produced (side-effects into ctx).
     for message in value {
         if let GeminiLiveMessageResponse::Message(server) = message {
-            let _ = server_message_to_chunk(server, &mut ctx);
+            let _ = server_message_to_chunk(*server, &mut ctx);
         }
     }
 

@@ -710,7 +710,7 @@ impl TryFrom<ClaudeCreateMessageResponse> for OpenAiCreateResponseResponse {
                     headers: OpenAiResponseHeaders {
                         extra: headers.extra,
                     },
-                    body: ResponseBody {
+                    body: Box::new(ResponseBody {
                         id: body.id,
                         created_at: 0,
                         error: None,
@@ -752,7 +752,7 @@ impl TryFrom<ClaudeCreateMessageResponse> for OpenAiCreateResponseResponse {
                         truncation: None,
                         usage,
                         user: None,
-                    },
+                    }),
                 }
             }
             ClaudeCreateMessageResponse::Error {

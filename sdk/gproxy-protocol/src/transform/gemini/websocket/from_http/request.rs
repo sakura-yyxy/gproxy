@@ -16,13 +16,13 @@ fn setup_message(
 ) -> GeminiBidiGenerateContentClientMessage {
     GeminiBidiGenerateContentClientMessage {
         message_type: GeminiBidiGenerateContentClientMessageType::Setup {
-            setup: GeminiBidiGenerateContentSetup {
+            setup: Box::new(GeminiBidiGenerateContentSetup {
                 model: ensure_models_prefix(&request.path.model),
                 generation_config: request.body.generation_config.clone(),
                 system_instruction: request.body.system_instruction.clone(),
                 tools: request.body.tools.clone(),
                 ..GeminiBidiGenerateContentSetup::default()
-            },
+            }),
         },
     }
 }

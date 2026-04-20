@@ -126,7 +126,7 @@ pub fn nonstream_to_stream(
             start_message.usage.output_tokens = 0;
 
             out.push(ClaudeStreamEvent::MessageStart {
-                message: start_message,
+                message: *start_message,
             });
 
             for (index, content_block) in body.content.iter().enumerate() {

@@ -16,7 +16,7 @@ impl TryFrom<OpenAiCreateResponseResponse> for OpenAiCreateImageEditResponse {
                 body,
             } => {
                 let image_body =
-                    create_image_response_body_from_response(body, PreferredImageAction::Edit)?;
+                    create_image_response_body_from_response(*body, PreferredImageAction::Edit)?;
                 Ok(OpenAiCreateImageEditResponse::Success {
                     stats_code,
                     headers,

@@ -219,7 +219,7 @@ impl TryFrom<Vec<ClaudeStreamEvent>> for ClaudeCreateMessageResponse {
             headers: ClaudeResponseHeaders {
                 extra: BTreeMap::new(),
             },
-            body: message,
+            body: Box::new(message),
         })
     }
 }

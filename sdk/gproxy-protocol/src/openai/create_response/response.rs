@@ -83,7 +83,7 @@ pub enum OpenAiCreateResponseResponse {
         /// Response headers.
         headers: OpenAiResponseHeaders,
         /// Successful body.
-        body: ResponseBody,
+        body: Box<ResponseBody>,
     },
     Error {
         /// HTTP status code returned by server (typically non-2xx).

@@ -2,6 +2,7 @@
 
 use gproxy_sdk::channel::response::UpstreamError;
 use gproxy_sdk::engine::engine::Usage;
+use gproxy_sdk::protocol::kinds::OperationFamily;
 
 // ---------------------------------------------------------------------------
 // WsProtocolBridge trait
@@ -38,14 +39,16 @@ pub(crate) trait WsProtocolBridge: Send {
 
 pub(crate) struct PassthroughBridge {
     protocol: String,
+    operation: OperationFamily,
     accumulated_usage: Usage,
     has_usage: bool,
 }
 
 impl PassthroughBridge {
-    pub fn new(protocol: impl Into<String>) -> Self {
+    pub fn new(protocol: impl Into<String>, operation: OperationFamily) -> Self {
         Self {
             protocol: protocol.into(),
+            operation,
             accumulated_usage: Usage::default(),
             has_usage: false,
         }
@@ -61,7 +64,7 @@ impl WsProtocolBridge for PassthroughBridge {
         &mut self,
         msg: &str,
     ) -> Result<(Vec<String>, Option<Usage>), UpstreamError> {
-        let usage = extract_ws_usage(&self.protocol, msg.as_bytes());
+        let usage = extract_ws_usage(&self.protocol, self.operation, msg.as_bytes());
         if let Some(ref u) = usage {
             merge_usage(&mut self.accumulated_usage, u);
             self.has_usage = true;
@@ -91,12 +94,37 @@ impl WsProtocolBridge for PassthroughBridge {
 // Usage extraction from WS messages
 // ---------------------------------------------------------------------------
 
-fn extract_ws_usage(protocol: &str, msg: &[u8]) -> Option<Usage> {
+fn extract_ws_usage(protocol: &str, operation: OperationFamily, msg: &[u8]) -> Option<Usage> {
+    if matches!(operation, OperationFamily::OpenAiRealtimeWebSocket) {
+        return extract_realtime_ws_usage(msg);
+    }
     match protocol {
         "openai" | "openai_response" => extract_openai_ws_usage(msg),
         "gemini" => extract_gemini_ws_usage(msg),
         _ => None,
     }
+}
+
+fn extract_realtime_ws_usage(msg: &[u8]) -> Option<Usage> {
+    use gproxy_sdk::protocol::openai::realtime::server_events::OpenAiRealtimeServerEvent;
+
+    let event: OpenAiRealtimeServerEvent = serde_json::from_slice(msg).ok()?;
+    let OpenAiRealtimeServerEvent::ResponseDone(done) = event else {
+        return None;
+    };
+    let u = done.response.usage?;
+    Some(Usage {
+        input_tokens: u.input_tokens.and_then(|v| i64::try_from(v).ok()),
+        output_tokens: u.output_tokens.and_then(|v| i64::try_from(v).ok()),
+        cache_read_input_tokens: u
+            .input_token_details
+            .as_ref()
+            .and_then(|d| d.cached_tokens)
+            .and_then(|v| i64::try_from(v).ok()),
+        cache_creation_input_tokens: None,
+        cache_creation_input_tokens_5min: None,
+        cache_creation_input_tokens_1h: None,
+    })
 }
 
 fn extract_openai_ws_usage(msg: &[u8]) -> Option<Usage> {
@@ -442,5 +470,55 @@ impl WsProtocolBridge for GeminiToOpenAiBridge {
         } else {
             None
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn realtime_response_done_yields_usage() {
+        let msg = br#"{
+            "type": "response.done",
+            "event_id": "evt_1",
+            "response": {
+                "id": "resp_1",
+                "object": "realtime.response",
+                "usage": {
+                    "input_tokens": 12,
+                    "output_tokens": 34,
+                    "total_tokens": 46,
+                    "input_token_details": { "cached_tokens": 5 }
+                }
+            }
+        }"#;
+        let usage = extract_realtime_ws_usage(msg).expect("usage extracted");
+        assert_eq!(usage.input_tokens, Some(12));
+        assert_eq!(usage.output_tokens, Some(34));
+        assert_eq!(usage.cache_read_input_tokens, Some(5));
+    }
+
+    #[test]
+    fn realtime_non_done_event_yields_no_usage() {
+        let msg = br#"{"type":"response.audio.delta","event_id":"e","delta":"AAA"}"#;
+        assert!(extract_realtime_ws_usage(msg).is_none());
+    }
+
+    #[test]
+    fn extract_dispatches_realtime_by_operation() {
+        let msg = br#"{
+            "type": "response.done",
+            "event_id": "e",
+            "response": {
+                "usage": { "input_tokens": 1, "output_tokens": 2, "total_tokens": 3 }
+            }
+        }"#;
+        let usage = extract_ws_usage("openai", OperationFamily::OpenAiRealtimeWebSocket, msg)
+            .expect("usage extracted");
+        assert_eq!(usage.input_tokens, Some(1));
+        // Same payload routed through OpenAiResponseWebSocket should NOT match because
+        // it's not a ResponseStreamEvent.
+        assert!(extract_ws_usage("openai", OperationFamily::OpenAiResponseWebSocket, msg).is_none());
     }
 }

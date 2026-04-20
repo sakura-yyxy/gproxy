@@ -18,7 +18,7 @@ impl TryFrom<GeminiGenerateContentResponse> for OpenAiCreateImageEditResponse {
             } => OpenAiCreateImageEditResponse::Success {
                 stats_code,
                 headers: openai_response_headers_from_gemini(headers),
-                body: create_image_response_body_from_gemini_response(body)?,
+                body: create_image_response_body_from_gemini_response(*body)?,
             },
             GeminiGenerateContentResponse::Error {
                 stats_code,

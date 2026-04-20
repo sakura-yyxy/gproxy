@@ -52,7 +52,7 @@ impl TryFrom<Vec<ResponseStreamEvent>> for OpenAiCreateResponseResponse {
             Ok(OpenAiCreateResponseResponse::Success {
                 stats_code: StatusCode::OK,
                 headers: OpenAiResponseHeaders::default(),
-                body,
+                body: Box::new(body),
             })
         } else if let Some(error) = stream_error {
             Ok(OpenAiCreateResponseResponse::Error {

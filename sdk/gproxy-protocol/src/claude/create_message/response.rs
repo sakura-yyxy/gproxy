@@ -18,7 +18,7 @@ pub enum ClaudeCreateMessageResponse {
         /// Response headers.
         headers: ClaudeResponseHeaders,
         /// Successful body.
-        body: ResponseBody,
+        body: Box<ResponseBody>,
     },
     Error {
         /// HTTP status code returned by server (typically 400/401/403/404/413/429/500/529).

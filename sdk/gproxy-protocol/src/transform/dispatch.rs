@@ -62,7 +62,7 @@ macro_rules! impl_body_envelope {
                         return Ok(Self::Success {
                             stats_code: StatusCode::OK,
                             headers: <$headers>::default(),
-                            body,
+                            body: body.into(),
                         });
                     }
                     Err(e) => e,
@@ -72,7 +72,7 @@ macro_rules! impl_body_envelope {
                         return Ok(Self::Error {
                             stats_code: StatusCode::BAD_REQUEST,
                             headers: <$headers>::default(),
-                            body,
+                            body: body.into(),
                         });
                     }
                     Err(e) => e,
