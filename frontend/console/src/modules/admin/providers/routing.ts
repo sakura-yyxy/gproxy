@@ -27,7 +27,6 @@ export const ROUTING_OPERATION_OPTIONS = [
   "stream_create_image_edit",
   "openai_response_websocket",
   "openai_realtime_websocket",
-  "realtime_client_secret_create",
   "realtime_call_accept",
   "realtime_call_hangup",
   "realtime_call_refer",

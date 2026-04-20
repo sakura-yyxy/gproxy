@@ -119,13 +119,6 @@ pub fn classify_route(
         ));
     }
 
-    if normalized_path == "/realtime/client_secrets" {
-        return Ok(Classification::new(
-            OperationFamily::RealtimeClientSecretCreate,
-            ProtocolKind::OpenAi,
-        ));
-    }
-
     if let Some((operation, call_id)) = classify_realtime_call_path(&normalized_path) {
         let mut path_params = BTreeMap::new();
         path_params.insert("call_id".to_string(), call_id);
@@ -429,23 +422,6 @@ mod tests {
 
         assert_eq!(result.operation, OperationFamily::StreamGenerateContent);
         assert_eq!(result.protocol, ProtocolKind::OpenAiResponse);
-    }
-
-    #[test]
-    fn classify_route_accepts_realtime_client_secrets() {
-        let result = classify_route(
-            &Method::POST,
-            "/codex/v1/realtime/client_secrets",
-            &HeaderMap::new(),
-            None,
-        )
-        .expect("realtime client_secrets should classify");
-        assert_eq!(
-            result.operation,
-            OperationFamily::RealtimeClientSecretCreate
-        );
-        assert_eq!(result.protocol, ProtocolKind::OpenAi);
-        assert!(result.path_params.is_empty());
     }
 
     #[test]

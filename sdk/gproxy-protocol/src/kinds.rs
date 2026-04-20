@@ -29,8 +29,6 @@ pub enum OperationFamily {
     OpenAiResponseWebSocket,
     #[serde(rename = "openai_realtime_websocket")]
     OpenAiRealtimeWebSocket,
-    #[serde(rename = "realtime_client_secret_create")]
-    RealtimeClientSecretCreate,
     #[serde(rename = "realtime_call_accept")]
     RealtimeCallAccept,
     #[serde(rename = "realtime_call_hangup")]
@@ -86,7 +84,6 @@ impl fmt::Display for OperationFamily {
             Self::StreamCreateImageEdit => "stream_create_image_edit",
             Self::OpenAiResponseWebSocket => "openai_response_websocket",
             Self::OpenAiRealtimeWebSocket => "openai_realtime_websocket",
-            Self::RealtimeClientSecretCreate => "realtime_client_secret_create",
             Self::RealtimeCallAccept => "realtime_call_accept",
             Self::RealtimeCallHangup => "realtime_call_hangup",
             Self::RealtimeCallRefer => "realtime_call_refer",
@@ -120,7 +117,6 @@ impl TryFrom<&str> for OperationFamily {
             "stream_create_image_edit" => Ok(Self::StreamCreateImageEdit),
             "openai_response_websocket" => Ok(Self::OpenAiResponseWebSocket),
             "openai_realtime_websocket" => Ok(Self::OpenAiRealtimeWebSocket),
-            "realtime_client_secret_create" => Ok(Self::RealtimeClientSecretCreate),
             "realtime_call_accept" => Ok(Self::RealtimeCallAccept),
             "realtime_call_hangup" => Ok(Self::RealtimeCallHangup),
             "realtime_call_refer" => Ok(Self::RealtimeCallRefer),

@@ -195,10 +195,6 @@ impl Channel for OpenAiChannel {
                 OperationFamily::OpenAiRealtimeWebSocket,
                 ProtocolKind::OpenAi,
             ),
-            pass(
-                OperationFamily::RealtimeClientSecretCreate,
-                ProtocolKind::OpenAi,
-            ),
             pass(OperationFamily::RealtimeCallAccept, ProtocolKind::OpenAi),
             pass(OperationFamily::RealtimeCallHangup, ProtocolKind::OpenAi),
             pass(OperationFamily::RealtimeCallRefer, ProtocolKind::OpenAi),
@@ -313,9 +309,6 @@ fn openai_request_path(request: &PreparedRequest) -> Result<String, UpstreamErro
         OperationFamily::Embedding => Ok("/v1/embeddings".to_string()),
         OperationFamily::OpenAiResponseWebSocket => Ok("/v1/responses".to_string()),
         OperationFamily::OpenAiRealtimeWebSocket => Ok("/v1/realtime".to_string()),
-        OperationFamily::RealtimeClientSecretCreate => {
-            Ok("/v1/realtime/client_secrets".to_string())
-        }
         OperationFamily::RealtimeCallAccept => {
             let call_id = request
                 .path_params
