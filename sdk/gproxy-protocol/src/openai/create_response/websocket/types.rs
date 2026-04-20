@@ -35,7 +35,6 @@ pub struct OpenAiCreateResponseAppendWebSocketRequestBody {
 /// Client frame union for Responses websocket.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type")]
-#[allow(clippy::large_enum_variant)]
 pub enum OpenAiCreateResponseWebSocketClientMessage {
     #[serde(rename = "response.create")]
     ResponseCreate(OpenAiCreateResponseCreateWebSocketRequestBody),
@@ -141,7 +140,6 @@ pub enum OpenAiCreateResponseWebSocketDoneMarker {
 /// Parsed websocket server message union.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
-#[allow(clippy::large_enum_variant)]
 pub enum OpenAiCreateResponseWebSocketServerMessage {
     WrappedError(OpenAiCreateResponseWebSocketWrappedErrorEvent),
     RateLimit(OpenAiCreateResponseWebSocketRateLimitEvent),

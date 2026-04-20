@@ -34,9 +34,9 @@ pub enum ExpiresAfterAnchor {
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum ClientSecretSessionConfig {
     /// Full Realtime session configuration (`type: "realtime"`).
-    Realtime(RealtimeSession),
+    Realtime(Box<RealtimeSession>),
     /// Transcription-only session configuration (`type: "transcription"`).
-    Transcription(RealtimeTranscriptionSession),
+    Transcription(Box<RealtimeTranscriptionSession>),
 }
 
 /// Transcription-only session configuration (`type: "transcription"`).

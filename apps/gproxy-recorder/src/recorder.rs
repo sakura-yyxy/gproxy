@@ -11,6 +11,23 @@ pub struct Recorder {
     filter_hosts: Vec<String>,
 }
 
+pub struct RecordEntry<'a> {
+    pub method: &'a str,
+    pub url: &'a str,
+    pub http_version: &'a str,
+    pub request_headers: Vec<(String, String)>,
+    pub request_body: Option<String>,
+    pub request_content_type: Option<String>,
+    pub status: u16,
+    pub status_text: &'a str,
+    pub response_headers: Vec<(String, String)>,
+    pub response_body: Option<String>,
+    pub response_content_type: Option<String>,
+    pub streaming_events: Option<Vec<HarStreamEvent>>,
+    pub started: chrono::DateTime<chrono::Utc>,
+    pub elapsed_ms: f64,
+}
+
 impl Recorder {
     pub fn new(filter_hosts: Vec<String>) -> Self {
         Self {
@@ -20,24 +37,23 @@ impl Recorder {
     }
 
     /// Record a completed request/response pair.
-    #[allow(clippy::too_many_arguments)]
-    pub fn record_entry(
-        &self,
-        method: &str,
-        url: &str,
-        http_version: &str,
-        request_headers: Vec<(String, String)>,
-        request_body: Option<String>,
-        request_content_type: Option<String>,
-        status: u16,
-        status_text: &str,
-        response_headers: Vec<(String, String)>,
-        response_body: Option<String>,
-        response_content_type: Option<String>,
-        streaming_events: Option<Vec<HarStreamEvent>>,
-        started: chrono::DateTime<chrono::Utc>,
-        elapsed_ms: f64,
-    ) {
+    pub fn record_entry(&self, entry: RecordEntry<'_>) {
+        let RecordEntry {
+            method,
+            url,
+            http_version,
+            request_headers,
+            request_body,
+            request_content_type,
+            status,
+            status_text,
+            response_headers,
+            response_body,
+            response_content_type,
+            streaming_events,
+            started,
+            elapsed_ms,
+        } = entry;
         if !self.filter_hosts.is_empty() {
             let matches = self.filter_hosts.iter().any(|h| url.contains(h.as_str()));
             if !matches {

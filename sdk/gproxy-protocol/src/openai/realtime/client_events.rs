@@ -105,10 +105,9 @@ pub struct OpenAiRealtimeOutputAudioBufferClear {
 /// Union of every client-to-server Realtime event (11 variants).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type")]
-#[allow(clippy::large_enum_variant)]
 pub enum OpenAiRealtimeClientEvent {
     #[serde(rename = "session.update")]
-    SessionUpdate(OpenAiRealtimeSessionUpdate),
+    SessionUpdate(Box<OpenAiRealtimeSessionUpdate>),
     #[serde(rename = "input_audio_buffer.append")]
     InputAudioBufferAppend(OpenAiRealtimeInputAudioBufferAppend),
     #[serde(rename = "input_audio_buffer.commit")]

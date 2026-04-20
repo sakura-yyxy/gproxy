@@ -228,12 +228,14 @@ pub async fn openai_responses_ws(
 
     Ok(ws.on_upgrade(move |socket| async move {
         if let Err(e) = handle_openai_ws(
-            state,
-            provider_name,
-            model,
-            user_id,
-            user_key_id,
-            headers_clone,
+            OpenAiWsSession {
+                state,
+                provider_name,
+                model,
+                user_id,
+                user_key_id,
+                headers: headers_clone,
+            },
             socket,
             OperationFamily::OpenAiResponseWebSocket,
             "/v1/responses",
@@ -273,12 +275,14 @@ pub async fn openai_realtime_ws(
 
     Ok(ws.on_upgrade(move |socket| async move {
         if let Err(e) = handle_openai_ws(
-            state,
-            provider_name,
-            model,
-            user_id,
-            user_key_id,
-            headers_clone,
+            OpenAiWsSession {
+                state,
+                provider_name,
+                model,
+                user_id,
+                user_key_id,
+                headers: headers_clone,
+            },
             socket,
             OperationFamily::OpenAiRealtimeWebSocket,
             "/v1/realtime",
@@ -392,12 +396,14 @@ pub async fn openai_responses_ws_unscoped(
 
     Ok(ws.on_upgrade(move |socket| async move {
         if let Err(e) = handle_openai_ws(
-            state,
-            target_provider,
-            target_model,
-            user_id,
-            user_key_id,
-            headers_clone,
+            OpenAiWsSession {
+                state,
+                provider_name: target_provider,
+                model: target_model,
+                user_id,
+                user_key_id,
+                headers: headers_clone,
+            },
             socket,
             OperationFamily::OpenAiResponseWebSocket,
             "/v1/responses",
@@ -455,12 +461,14 @@ pub async fn openai_realtime_ws_unscoped(
 
     Ok(ws.on_upgrade(move |socket| async move {
         if let Err(e) = handle_openai_ws(
-            state,
-            target_provider,
-            target_model,
-            user_id,
-            user_key_id,
-            headers_clone,
+            OpenAiWsSession {
+                state,
+                provider_name: target_provider,
+                model: target_model,
+                user_id,
+                user_key_id,
+                headers: headers_clone,
+            },
             socket,
             OperationFamily::OpenAiRealtimeWebSocket,
             "/v1/realtime",
@@ -477,16 +485,19 @@ pub async fn openai_realtime_ws_unscoped(
 // ---------------------------------------------------------------------------
 
 async fn handle_openai_ws(
-    state: Arc<AppState>,
-    provider_name: String,
-    model: Option<String>,
-    user_id: i64,
-    user_key_id: i64,
-    headers: HeaderMap,
+    session: OpenAiWsSession,
     mut downstream: WebSocket,
     operation: OperationFamily,
     upstream_path: &str,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let OpenAiWsSession {
+        state,
+        provider_name,
+        model,
+        user_id,
+        user_key_id,
+        headers,
+    } = session;
     let trace_id = super::handler::generate_trace_id();
     // Try upstream WebSocket via SDK
     let ctx = WsBridgeContext {
@@ -634,6 +645,15 @@ async fn handle_gemini_live_ws(
 // ---------------------------------------------------------------------------
 // Bidirectional WS bridge with protocol conversion and usage tracking
 // ---------------------------------------------------------------------------
+
+struct OpenAiWsSession {
+    state: Arc<AppState>,
+    provider_name: String,
+    model: Option<String>,
+    user_id: i64,
+    user_key_id: i64,
+    headers: HeaderMap,
+}
 
 struct WsBridgeContext {
     state: Arc<AppState>,

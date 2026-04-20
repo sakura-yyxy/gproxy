@@ -75,7 +75,6 @@ pub struct ResponseBody {
 /// Full HTTP response for OpenAI `responses.create` endpoint.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
-#[allow(clippy::large_enum_variant)]
 pub enum OpenAiCreateResponseResponse {
     Success {
         /// HTTP status code returned by server (should be `200 OK`).

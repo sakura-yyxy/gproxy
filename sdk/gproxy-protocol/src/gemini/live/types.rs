@@ -22,7 +22,6 @@ pub struct GeminiBidiGenerateContentClientMessage {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
-#[allow(clippy::large_enum_variant)]
 pub enum GeminiBidiGenerateContentClientMessageType {
     Setup {
         setup: GeminiBidiGenerateContentSetup,
@@ -187,7 +186,6 @@ pub struct GeminiBidiGenerateContentServerMessage {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
-#[allow(clippy::large_enum_variant)]
 pub enum GeminiBidiGenerateContentServerMessageType {
     SetupComplete {
         #[serde(rename = "setupComplete")]

@@ -16,7 +16,7 @@ use tracing::{error, info, warn};
 
 use crate::har::HarStreamEvent;
 use crate::mitm::MitmAcceptor;
-use crate::recorder::Recorder;
+use crate::recorder::{RecordEntry, Recorder};
 
 /// Connect to an upstream host, optionally through a SOCKS5 proxy.
 async fn connect_upstream(
@@ -294,22 +294,22 @@ async fn handle_tunneled_request(
 
             let decoded_body = decompress_body(&response_body, &response_content_encoding);
             let response_headers_for_client = response_headers.clone();
-            recorder.record_entry(
-                &method,
-                &url,
-                &http_version,
+            recorder.record_entry(RecordEntry {
+                method: &method,
+                url: &url,
+                http_version: &http_version,
                 request_headers,
                 request_body,
                 request_content_type,
                 status,
-                &status_text,
+                status_text: &status_text,
                 response_headers,
-                Some(String::from_utf8_lossy(&decoded_body).to_string()),
+                response_body: Some(String::from_utf8_lossy(&decoded_body).to_string()),
                 response_content_type,
                 streaming_events,
                 started,
-                elapsed,
-            );
+                elapsed_ms: elapsed,
+            });
 
             let mut resp_builder = Response::builder().status(status);
             for (key, value) in &response_headers_for_client {
@@ -813,22 +813,22 @@ async fn handle_plain_http(
 
     let decoded_body = decompress_body(&response_body, &content_encoding);
     let response_headers_for_client = response_headers.clone();
-    recorder.record_entry(
-        &method,
-        &url,
-        &http_version,
+    recorder.record_entry(RecordEntry {
+        method: &method,
+        url: &url,
+        http_version: &http_version,
         request_headers,
         request_body,
         request_content_type,
         status,
-        &status_text,
+        status_text: &status_text,
         response_headers,
-        Some(String::from_utf8_lossy(&decoded_body).to_string()),
-        content_type,
+        response_body: Some(String::from_utf8_lossy(&decoded_body).to_string()),
+        response_content_type: content_type,
         streaming_events,
         started,
-        elapsed,
-    );
+        elapsed_ms: elapsed,
+    });
 
     let mut resp_builder = Response::builder().status(status);
     for (key, value) in &response_headers_for_client {

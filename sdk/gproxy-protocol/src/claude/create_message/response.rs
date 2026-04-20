@@ -10,7 +10,6 @@ pub type ResponseBody = BetaMessage;
 /// Full HTTP response for Claude "Create a Message" endpoint.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
-#[allow(clippy::large_enum_variant)]
 pub enum ClaudeCreateMessageResponse {
     Success {
         /// HTTP status code returned by server (should be `200 OK`).

@@ -33,7 +33,6 @@ pub struct OpenAiCreateClientSecretResponseHeaders {
 /// Full HTTP response for OpenAI `realtime.client_secrets.create` endpoint.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
-#[allow(clippy::large_enum_variant)]
 pub enum OpenAiCreateClientSecretResponse {
     Success {
         /// HTTP status code returned by server (should be `200 OK`).

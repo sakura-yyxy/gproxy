@@ -399,7 +399,6 @@ pub struct OpenAiRealtimeConversationCreated {
 /// Union of every server-to-client Realtime event.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type")]
-#[allow(clippy::large_enum_variant)]
 pub enum OpenAiRealtimeServerEvent {
     #[serde(rename = "error")]
     Error(OpenAiRealtimeErrorEvent),
