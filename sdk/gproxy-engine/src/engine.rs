@@ -2171,15 +2171,18 @@ fn classify_openai_ws_probe_message(message: &WsMessage) -> Option<String> {
                 {
                     Some(error.error.message)
                 }
-                Ok(OpenAiCreateResponseWebSocketServerMessage::StreamEvent(
-                    ResponseStreamEvent::Error { error, .. },
-                )) if looks_like_openai_auth_error(
-                    error.code.as_deref(),
-                    &error.type_,
-                    &error.message,
-                ) =>
-                {
-                    Some(error.message)
+                Ok(OpenAiCreateResponseWebSocketServerMessage::StreamEvent(event)) => {
+                    if let ResponseStreamEvent::Error { error, .. } = *event
+                        && looks_like_openai_auth_error(
+                            error.code.as_deref(),
+                            &error.type_,
+                            &error.message,
+                        )
+                    {
+                        Some(error.message)
+                    } else {
+                        None
+                    }
                 }
                 _ => None,
             }

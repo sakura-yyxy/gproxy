@@ -37,7 +37,7 @@ pub struct OpenAiCreateResponseAppendWebSocketRequestBody {
 #[serde(tag = "type")]
 pub enum OpenAiCreateResponseWebSocketClientMessage {
     #[serde(rename = "response.create")]
-    ResponseCreate(OpenAiCreateResponseCreateWebSocketRequestBody),
+    ResponseCreate(Box<OpenAiCreateResponseCreateWebSocketRequestBody>),
     #[serde(rename = "response.append")]
     ResponseAppend(OpenAiCreateResponseAppendWebSocketRequestBody),
 }
@@ -143,7 +143,7 @@ pub enum OpenAiCreateResponseWebSocketDoneMarker {
 pub enum OpenAiCreateResponseWebSocketServerMessage {
     WrappedError(OpenAiCreateResponseWebSocketWrappedErrorEvent),
     RateLimit(OpenAiCreateResponseWebSocketRateLimitEvent),
-    StreamEvent(stream::ResponseStreamEvent),
+    StreamEvent(Box<stream::ResponseStreamEvent>),
     ApiError(OpenAiApiErrorResponse),
     Done(OpenAiCreateResponseWebSocketDoneMarker),
 }

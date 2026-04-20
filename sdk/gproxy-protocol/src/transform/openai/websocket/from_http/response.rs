@@ -41,7 +41,7 @@ pub fn openai_stream_events_to_websocket_messages_with_context(
     let mut messages = Vec::with_capacity(value.len() + 1);
     for event in value {
         messages.push(OpenAiCreateResponseWebSocketServerMessage::StreamEvent(
-            event.clone(),
+            Box::new(event.clone()),
         ));
     }
     messages.push(OpenAiCreateResponseWebSocketServerMessage::Done(

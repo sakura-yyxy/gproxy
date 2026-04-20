@@ -351,13 +351,13 @@ impl WsProtocolBridge for GeminiToOpenAiBridge {
 
         // Wrap as OpenAI WS ResponseCreate message
         let ws_msg =
-            OpenAiCreateResponseWebSocketClientMessage::ResponseCreate(
+            OpenAiCreateResponseWebSocketClientMessage::ResponseCreate(Box::new(
                 gproxy_sdk::protocol::openai::create_response::websocket::types::OpenAiCreateResponseCreateWebSocketRequestBody {
                     request: openai_request.body,
                     generate: None,
                     client_metadata: None,
                 },
-            );
+            ));
 
         let json = serde_json::to_string(&ws_msg)
             .map_err(|e| UpstreamError::Channel(format!("serialize OpenAI WS message: {e}")))?;

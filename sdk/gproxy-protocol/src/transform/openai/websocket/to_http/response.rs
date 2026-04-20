@@ -104,7 +104,7 @@ pub fn websocket_messages_to_openai_stream_events_with_context(
     for message in value.iter().cloned() {
         match message {
             OpenAiCreateResponseWebSocketServerMessage::StreamEvent(event) => {
-                events.push(event);
+                events.push(*event);
             }
             OpenAiCreateResponseWebSocketServerMessage::Done(_) => {
                 // Done marker is not a stream event; skip.

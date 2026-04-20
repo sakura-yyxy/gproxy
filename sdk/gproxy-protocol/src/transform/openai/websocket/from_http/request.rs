@@ -56,13 +56,13 @@ pub fn openai_create_response_request_to_websocket_message_with_context(
     let client_metadata = extract_client_metadata_from_request_body(&mut request_body, &mut ctx);
 
     Ok((
-        OpenAiCreateResponseWebSocketClientMessage::ResponseCreate(
+        OpenAiCreateResponseWebSocketClientMessage::ResponseCreate(Box::new(
             OpenAiCreateResponseCreateWebSocketRequestBody {
                 request: request_body,
                 generate: None,
                 client_metadata,
             },
-        ),
+        )),
         ctx,
     ))
 }

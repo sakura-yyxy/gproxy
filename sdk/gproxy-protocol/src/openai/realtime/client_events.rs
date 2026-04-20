@@ -123,7 +123,7 @@ pub enum OpenAiRealtimeClientEvent {
     #[serde(rename = "conversation.item.delete")]
     ConversationItemDelete(OpenAiRealtimeConversationItemDelete),
     #[serde(rename = "response.create")]
-    ResponseCreate(OpenAiRealtimeResponseCreate),
+    ResponseCreate(Box<OpenAiRealtimeResponseCreate>),
     #[serde(rename = "response.cancel")]
     ResponseCancel(OpenAiRealtimeResponseCancel),
     #[serde(rename = "output_audio_buffer.clear")]
